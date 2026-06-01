@@ -49,6 +49,13 @@
   }
   * { box-sizing: border-box; }
   html, body, #root { height: 100%; }
+  /* Mobile robustness: avoid the 100vh address-bar trap and any horizontal overflow */
+  html, body { overflow-x: hidden; max-width: 100%; }
+  @supports (height: 100dvh) {
+    html, body, #root { height: 100dvh; }
+    .h-screen { height: 100dvh !important; }
+    .min-h-screen { min-height: 100dvh !important; }
+  }
   body {
     margin: 0;
     background: #f5f7ff;
@@ -363,9 +370,9 @@ function HomeScreen({ onSelect }: Props) {
           style={{ background: "radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 65%)", filter: "blur(70px)" }} />
       </div>
       {/* Subtle grid */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.05]"
+      <div className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: "linear-gradient(rgba(59,91,219,1) 1px, transparent 1px), linear-gradient(90deg, rgba(59,91,219,1) 1px, transparent 1px)",
+          backgroundImage: "linear-gradient(rgba(59,91,219,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59,91,219,0.05) 1px, transparent 1px)",
           backgroundSize: "72px 72px",
         }} />
 
