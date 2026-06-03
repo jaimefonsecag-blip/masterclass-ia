@@ -121,8 +121,6 @@
 }
 </script>
 
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
-
 <script type="text/plain" id="__bundle_src">
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createRoot } from "react-dom/client";
@@ -7870,6 +7868,7 @@ function InteractiveFlow() {
 interface Phase {
   num: string; icon: React.ReactNode; title: string; subtitle: string;
   color: string; bg: string; desc: string; why: string; details: string[];
+  templateFile: string; templateLang: string; template: string;
 }
 const PHASES: Phase[] = [
   {
@@ -7883,6 +7882,38 @@ const PHASES: Phase[] = [
       "Restricciones: rendimiento, seguridad, compatibilidad",
       "Casos límite y manejo explícito de errores",
     ],
+    templateFile: "requirements.md", templateLang: "EARS / markdown",
+    template: `# requirements.md — <nombre del proyecto>
+
+## Objetivo
+<1–2 frases: qué problema de negocio resuelve>
+
+## Glosario
+- <término>: <definición sin ambigüedad>
+
+## Requerimientos funcionales
+### RF-01 · <título del caso de uso>
+WHEN   <condición o evento que lo dispara>
+THE SYSTEM SHALL <comportamiento esperado, verificable>
+AND    <criterio de aceptación medible>
+AND    <criterio de aceptación medible>
+
+### RF-02 · <título>
+WHEN   <condición>
+THE SYSTEM SHALL <comportamiento>
+AND    <criterio>
+
+## Restricciones (no funcionales)
+- Rendimiento : <p.ej. responder en < 2 s p95>
+- Seguridad   : <p.ej. cifrar PII en reposo y tránsito>
+- Compatibilidad : <navegadores / versiones / APIs>
+
+## Casos límite y errores
+- WHEN <entrada inválida> THE SYSTEM SHALL <rechazar + mensaje claro>
+- WHEN <servicio externo caído> THE SYSTEM SHALL <reintentar / degradar>
+
+## Fuera de alcance
+- <lo que este sistema NO hará>`,
   },
   {
     num: "02", icon: <Cpu size={18} />, title: "Diseño Técnico", subtitle: "Arquitectura",
@@ -7895,6 +7926,36 @@ const PHASES: Phase[] = [
       "Modelo de datos y decisiones de almacenamiento justificadas",
       "Dependencias externas con versiones fijadas",
     ],
+    templateFile: "design.md", templateLang: "markdown",
+    template: `# design.md — <nombre del proyecto>
+
+## Resumen de la arquitectura
+<diagrama o descripción: componentes y cómo se comunican>
+
+## Componentes
+| Componente | Responsabilidad | Tecnología |
+|------------|-----------------|------------|
+| <nombre>   | <qué hace>      | <stack>    |
+
+## Contratos de API
+### <METHOD> /ruta
+Request:  { campo: tipo, … }
+Response: { campo: tipo, … }
+Errores:  4xx <cuándo> · 5xx <cuándo>
+
+## Modelo de datos
+tabla <nombre>
+  - <columna> : <tipo>  // <nota / índice / FK>
+
+## Decisiones técnicas (con justificación)
+- <decisión> → <por qué se eligió sobre la alternativa>
+  Ej: JWT RS256 (no HS256) → permite verificar sin compartir secreto.
+
+## Dependencias externas
+- <librería/servicio> @ <versión fijada> — <para qué>
+
+## Riesgos y mitigaciones
+- <riesgo> → <cómo se mitiga>`,
   },
   {
     num: "03", icon: <ListChecks size={18} />, title: "Lista de Tareas", subtitle: "Ejecución ordenada",
@@ -7907,6 +7968,31 @@ const PHASES: Phase[] = [
       "Rollback atómico disponible si falla cualquier paso",
       "El código no se escribe hasta tener los 3 docs aprobados",
     ],
+    templateFile: "tasks.md", templateLang: "markdown",
+    template: `# tasks.md — <nombre del proyecto>
+
+> Cada tarea es atómica, tiene criterio de verificación
+> y referencia al requerimiento que cumple.
+
+- [ ] 1. <tarea atómica>
+      ref     : RF-01
+      verifica: <test / query / lint que prueba que está OK>
+      depende : —
+
+- [ ] 2. <tarea atómica>
+      ref     : RF-01
+      verifica: <criterio medible>
+      depende : 1
+
+- [ ] 3. <tarea atómica>
+      ref     : RF-02
+      verifica: <criterio medible>
+      depende : 2
+
+## Reglas de ejecución
+- No avanzar a la tarea N+1 si la N no pasó su verificación.
+- Si una tarea falla → rollback a la última tarea verde.
+- Marcar [x] solo cuando el criterio "verifica" pasa.`,
   },
 ];
 
@@ -7978,6 +8064,17 @@ function PhaseCard({ phase, index }: { phase: Phase; index: number }) {
                     <span style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.76rem", color:"#6b7280", lineHeight:1.55 }}>{d}</span>
                   </div>
                 ))}
+              </div>
+              {/* Template / plantilla */}
+              <div onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Code2 size={13} style={{ color:phase.color }} />
+                  <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.55rem", color:phase.color, letterSpacing:"0.08em" }}>PLANTILLA — CÓMO DEBE VERSE EL DOCUMENTO</span>
+                </div>
+                <CodeBlock title={phase.templateFile} lang={phase.templateLang} code={phase.template} />
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.68rem", color:"#9ca3af", lineHeight:1.5, margin:"8px 2px 0" }}>
+                  Reemplaza los <code style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.62rem", color:phase.color, background:`${phase.color}10`, padding:"1px 5px", borderRadius:4 }}>&lt;marcadores&gt;</code> con el contenido real de tu proyecto. Esta es la estructura mínima que el Planner debería producir.
+                </p>
               </div>
             </div>
           </motion.div>
@@ -11047,45 +11144,93 @@ setTimeout(() => {
 </script>
 <script type="module">
   (async function () {
+    const BABEL_URL = "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js";
+    const OPTS = {
+      filename: "bundle.tsx", sourceType: "module", compact: true, comments: false,
+      presets: [["react"], ["typescript", { isTSX: true, allExtensions: true, allowDeclareFields: true }]],
+    };
+
+    function showError(err) {
+      console.error("Bundle load/transform failed:", err);
+      var boot = document.getElementById("boot");
+      if (!boot) return;
+      boot.classList.remove("hide");
+      boot.innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;max-width:84%;text-align:center">' +
+          '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:15px;color:#e0e7ff">No se pudo cargar el contenido</div>' +
+          '<div style="font-family:monospace;font-size:11px;color:#94a3b8;white-space:pre-wrap;line-height:1.5">Revisa tu conexión a internet e inténtalo de nuevo.</div>' +
+          '<button onclick="location.reload()" style="margin-top:4px;padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:600;font-size:13px;color:#fff;background:linear-gradient(135deg,#3b5bdb,#7c3aed)">Reintentar</button>' +
+        '</div>';
+    }
+    window.__bootFail = showError;
+
+    // Compile off the main thread (Worker) so the page never freezes; fall back
+    // to a lazily-loaded main-thread compiler if Workers are unavailable.
+    function loadBabelMain() {
+      return new Promise(function (res, rej) {
+        if (window.Babel) return res();
+        var s = document.createElement("script");
+        s.src = BABEL_URL;
+        s.onload = res;
+        s.onerror = function () { rej(new Error("No se pudo descargar el compilador")); };
+        document.head.appendChild(s);
+      });
+    }
+    function compileMain(src) {
+      return loadBabelMain().then(function () { return Babel.transform(src, OPTS).code; });
+    }
+    function compile(src) {
+      return new Promise(function (resolve, reject) {
+        var settled = false;
+        function fallback() { if (settled) return; settled = true; compileMain(src).then(resolve, reject); }
+        try {
+          var workerSrc =
+            'importScripts("' + BABEL_URL + '");' +
+            'self.onmessage=function(e){try{var c=Babel.transform(e.data.src,e.data.opts).code;self.postMessage({code:c});}catch(err){self.postMessage({error:String(err&&err.message||err)});}};';
+          var w = new Worker(URL.createObjectURL(new Blob([workerSrc], { type: "text/javascript" })));
+          var to = setTimeout(function () { try { w.terminate(); } catch (e) {} fallback(); }, 30000);
+          w.onmessage = function (e) {
+            if (settled) return;
+            clearTimeout(to); try { w.terminate(); } catch (er) {}
+            if (e.data && e.data.code) { settled = true; resolve(e.data.code); }
+            else fallback();
+          };
+          w.onerror = function () { clearTimeout(to); fallback(); };
+          w.postMessage({ src: src, opts: OPTS });
+        } catch (e) { fallback(); }
+      });
+    }
+
     try {
       const src = document.getElementById("__bundle_src").textContent;
-      const { code } = Babel.transform(src, {
-        filename: "bundle.tsx",
-        sourceType: "module",
-        compact: true,
-        comments: false,
-        presets: [
-          ["react"],
-          ["typescript", { isTSX: true, allExtensions: true, allowDeclareFields: true }],
-        ],
-      });
+      const code = await compile(src);
       const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
       await import(url);
     } catch (err) {
-      console.error("Bundle load/transform failed:", err);
-      const boot = document.getElementById("boot");
-      if (boot) {
-        boot.innerHTML = '<div style="color:#fca5a5;font-family:monospace;font-size:12px;max-width:80%;text-align:center;white-space:pre-wrap">' +
-          (err && err.message ? err.message : String(err)) + "</div>";
-      }
+      showError(err);
     }
   })();
 </script>
 
 <script>
-  // hide boot splash once App has mounted content into #root
+  // Hide the boot splash as soon as the app mounts (no time cap — slow devices
+  // can take a while). If nothing mounts after 45s, surface a retry screen.
   (function () {
-    var tries = 0;
-    var timer = setInterval(function () {
-      tries++;
-      var root = document.getElementById("root");
-      if (root && root.childElementCount > 0) {
-        var boot = document.getElementById("boot");
-        if (boot) { boot.classList.add("hide"); setTimeout(function(){ boot.remove(); }, 600); }
-        clearInterval(timer);
+    var root = document.getElementById("root");
+    var boot = document.getElementById("boot");
+    function hide() {
+      if (boot) { boot.classList.add("hide"); setTimeout(function () { if (boot && boot.parentNode) boot.remove(); }, 600); }
+    }
+    if (root && root.childElementCount > 0) { hide(); return; }
+    var obs = new MutationObserver(function () {
+      if (root.childElementCount > 0) { obs.disconnect(); hide(); }
+    });
+    if (root) obs.observe(root, { childList: true });
+    setTimeout(function () {
+      if (root && root.childElementCount === 0 && typeof window.__bootFail === "function") {
+        window.__bootFail(new Error("timeout"));
       }
-      if (tries > 200) clearInterval(timer); // ~40s safety
-    }, 200);
+    }, 45000);
   })();
 </script>
 </body>
