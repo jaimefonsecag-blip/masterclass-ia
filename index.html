@@ -128,7 +128,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { createRoot } from "react-dom/client";
 import { motion, AnimatePresence, MotionGlobalConfig } from "motion/react";
 import * as Slider from "@radix-ui/react-slider";
-import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, ArrowRightLeft, BarChart2, BookOpen, Bot, Brain, Bug, Building2, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Chrome, Clock, Code2, Cpu, CreditCard, Database, Eye, FileSpreadsheet, FileText, FolderOpen, GitBranch, Github, Globe, HardDrive, Hash, Headphones, Home, Inbox, Info, Layers, ListChecks, Loader2, Lock, Mail, Map, MessageSquare, Monitor, Play, Plug, RefreshCw, Repeat, Repeat2, RotateCcw, Search, Send, Server, ShieldAlert, Slack, Sparkles, Target, Ticket, Trash2, User, UserPlus, Wrench, X, Zap } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, ArrowRightLeft, BarChart2, BookOpen, Bot, Brain, Bug, Building2, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Chrome, Clock, Code2, Cpu, CreditCard, Database, Eye, FileSpreadsheet, FileText, FolderOpen, GitBranch, Github, Globe, HardDrive, Hash, Headphones, Home, Inbox, Info, Layers, ListChecks, Loader2, Lock, Mail, Map, MessageSquare, Monitor, Pause, Play, Plug, RefreshCw, Repeat, Repeat2, RotateCcw, Search, Send, Server, ShieldAlert, Slack, Sparkles, Target, Ticket, Trash2, User, UserPlus, Wrench, X, Zap } from "lucide-react";
 
 // ===== HomeScreen =====
 
@@ -1842,7 +1842,161 @@ function LLMInteractiveDemo() {
 
 // ─── Main Section ───────────────────────────────────────────────────────────
 
+// ─── Parámetros explainer modal ──────────────────────────────────────────────
+function ParamsExplainerModal({ open, onClose }) {
+  const scaleRows = [
+    ["Modelo pequeño", "7B", "7,000,000,000 · 7× la población mundial"],
+    ["Modelo mediano", "70B", "70,000,000,000 · 70× la población mundial"],
+    ["Modelo grande", "~1T", "1,000,000,000,000 · 1,000× la población mundial"],
+  ];
+  const tierRows = [
+    ["Más capaz", "Opus", "Tareas complejas, razonamiento profundo, agentes"],
+    ["Balance", "Sonnet", "Uso diario, desarrollo, tareas variadas"],
+    ["Más rápido", "Haiku", "Respuestas instantáneas, tareas simples, bajo costo"],
+  ];
+  const modelRows = [
+    ["Claude Opus 4.6", "no público", "200K", "Razonamiento complejo, agentes"],
+    ["Claude Sonnet 4.6", "no público", "200K", "Balance velocidad / calidad"],
+    ["Claude Haiku 4.5", "no público", "200K", "Velocidad, bajo costo"],
+    ["GPT-4o", "~200B (est.)", "128K", "Multimodal, velocidad"],
+    ["Gemini 2.5 Pro", "no público", "1M", "Contexto muy largo"],
+    ["Llama 3.1 405B", "405B", "128K", "Open source, on-premise"],
+    ["Mistral 7B", "7B", "32K", "Correr en local, liviano"],
+  ];
+  const heading = { fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: "1.05rem", color: "#111827", letterSpacing: "-0.01em" };
+  const sub = { fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: "0.92rem", color: "#1e3a8a", margin: "0 0 6px" };
+  const para = { fontFamily: "'Inter', sans-serif", fontSize: "0.88rem", color: "#374151", lineHeight: 1.72, margin: "0 0 12px" };
+  const eyebrow = { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.62rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#7c3aed" };
+  const th = { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.64rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1e3a8a", textAlign: "left", padding: "9px 12px", background: "#eef2ff", borderBottom: "1px solid rgba(59,91,219,0.15)" };
+  const td = { fontFamily: "'Inter', sans-serif", fontSize: "0.82rem", color: "#374151", padding: "9px 12px", borderBottom: "1px solid rgba(59,91,219,0.08)", verticalAlign: "top" };
+
+  function Num({ n }) {
+    return <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 8, background: "linear-gradient(135deg,#3b5bdb,#7c3aed)", color: "#fff", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", fontWeight: 600, flexShrink: 0 }}>{n}</span>;
+  }
+  function Table({ head, rows, mono }) {
+    return (
+      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(59,91,219,0.12)", marginBottom: 16 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>{head.map((h, i) => <th key={i} style={th}>{h}</th>)}</tr></thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i} style={{ background: i % 2 ? "#fafbff" : "#fff" }}>
+                {r.map((c, j) => <td key={j} style={{ ...td, ...(mono && mono.includes(j) ? { fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", color: "#3b5bdb" } : {}) }}>{c}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(13,14,26,0.45)", backdropFilter: "blur(6px)" }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.98 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full rounded-2xl overflow-hidden flex flex-col"
+            style={{ maxWidth: 760, maxHeight: "88dvh", background: "#ffffff", boxShadow: "0 30px 80px rgba(13,14,26,0.35)" }}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 px-6 py-5 flex-shrink-0" style={{ background: "linear-gradient(135deg,#3b5bdb,#7c3aed)" }}>
+              <div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.8)", marginBottom: 5 }}>Profundiza · LLM</div>
+                <h2 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.3rem", color: "#fff", margin: 0, lineHeight: 1.2 }}>Parámetros en modelos LLM</h2>
+                <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.8rem", color: "rgba(255,255,255,0.85)", margin: "4px 0 0" }}>Qué son, cómo escalan y qué significa la versión</p>
+              </div>
+              <button onClick={onClose} className="flex items-center justify-center rounded-lg flex-shrink-0" style={{ width: 34, height: 34, background: "rgba(255,255,255,0.18)", color: "#fff", border: "none", cursor: "pointer" }} aria-label="Cerrar">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="overflow-y-auto px-6 py-6" style={{ scrollbarWidth: "thin" }}>
+              {/* 1 */}
+              <div className="flex items-center gap-3 mb-3"><Num n="1" /><h3 style={heading}>Qué es un parámetro</h3></div>
+              <p style={para}>Un parámetro es simplemente <strong>un número</strong>. Nada más. Pero imagina tener billones de esos números, todos ajustados durante meses de entrenamiento — eso es lo que le da a un modelo como Claude o GPT la capacidad de "entender" lenguaje.</p>
+              <div className="rounded-xl p-4 mb-3" style={{ background: "#f5f7ff", border: "1px solid rgba(59,91,219,0.12)" }}>
+                <div style={{ ...eyebrow, marginBottom: 6 }}>Analogía · el panel de un DJ</div>
+                <p style={{ ...para, margin: 0 }}>Una mesa de mezclas con millones de perillas, cada una entre 0 y 1. Al inicio están aleatorias (el modelo no sabe nada). Durante el entrenamiento lee billones de textos y ajusta cada perilla milímetro a milímetro para equivocarse menos al predecir la siguiente palabra. Al final, la combinación exacta de todas esas perillas <em>es</em> el conocimiento del modelo: no hay base de datos ni reglas a mano, solo números.</p>
+              </div>
+              <p style={para}>Si la perilla "cielo → color" apunta a "azul", el modelo acierta en «El cielo es de color ___». Si apunta a "salado", falla. Repetido con billones de frases, así aprende gramática, hechos, razonamiento y hasta el sentido del humor.</p>
+              <Table head={["Escala", "Parámetros", "Comparación"]} rows={scaleRows} mono={[1]} />
+
+              {/* 2 */}
+              <div className="flex items-center gap-3 mb-3 mt-7"><Num n="2" /><h3 style={heading}>Cómo escalan los modelos</h3></div>
+              <p style={para}>Más parámetros = más capacidad para capturar patrones complejos. Pero no es lineal: duplicar parámetros no duplica la inteligencia.</p>
+              <p style={sub}>Qué mejora con más parámetros</p>
+              {[
+                ["Razonamiento de varios pasos", "Encadenar 10 pasos lógicos intermedios sin perderse."],
+                ["Sutileza del lenguaje", "Distinguir un cumplido del sarcasmo según el contexto."],
+                ["Conocimiento más amplio", "Memorizar más historia, ciencia, código e idiomas a la vez."],
+                ["Instrucciones complejas", "Balancear muchas restricciones de tono y formato simultáneamente."],
+              ].map((r, i) => (
+                <div key={i} className="flex items-start gap-2 mb-1.5">
+                  <span style={{ color: "#7c3aed", fontSize: "0.8rem", flexShrink: 0, marginTop: 2 }}>◆</span>
+                  <p style={{ ...para, margin: 0 }}><strong style={{ color: "#111827" }}>{r[0]}: </strong>{r[1]}</p>
+                </div>
+              ))}
+              <div className="rounded-xl p-4 mt-3 mb-3" style={{ background: "#fff7ed", border: "1px solid rgba(194,65,12,0.2)" }}>
+                <div style={{ ...eyebrow, color: "#c2410c", marginBottom: 6 }}>El costo de escalar</div>
+                <p style={{ ...para, margin: 0, color: "#7c2d12" }}>Más GPUs (miles de chips durante meses), más energía (cientos de hogares), respuestas más lentas y mayor costo por consulta. Por eso hay versiones distintas del mismo modelo: una grande para tareas complejas y una pequeña para tareas simples y rápidas.</p>
+              </div>
+              <p style={sub}>Leyes de escala (Scaling Laws)</p>
+              <p style={para}>La capacidad sigue una curva <strong>predecible</strong> con tres variables que deben crecer juntas y balanceadas: <strong>parámetros</strong> (cuántas perillas), <strong>datos</strong> (cuántos textos leyó) y <strong>cómputo</strong> (cuántas GPUs y cuánto tiempo). Escalar solo una es desperdiciar recursos.</p>
+
+              {/* 3 */}
+              <div className="flex items-center gap-3 mb-3 mt-7"><Num n="3" /><h3 style={heading}>Qué significa el número de versión</h3></div>
+              <p style={para}>Los nombres no son solo marketing: cada parte codifica información real sobre cómo fue construido el modelo.</p>
+              <div className="rounded-xl p-4 mb-3" style={{ background: "#0d0e1a" }}>
+                <pre style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", color: "#e0e7ff", margin: 0, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{`claude   →  familia (arquitectura base)
+sonnet   →  tier de capacidad
+4        →  generación mayor
+6        →  subversión / refinamiento`}</pre>
+              </div>
+              <Table head={["Tier", "Nombre", "Para qué sirve"]} rows={tierRows} />
+              <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                <div className="rounded-xl p-4" style={{ background: "#ffffff", border: "1px solid rgba(59,91,219,0.14)" }}>
+                  <p style={{ ...sub, color: "#3b5bdb" }}>Generación mayor (3 → 4)</p>
+                  <p style={{ ...para, margin: 0, fontSize: "0.82rem" }}>Salto grande: cambia la arquitectura, más datos, técnicas nuevas. Como pasar de un motor de 4 a 8 cilindros. Más/mejor uso de parámetros, contexto más largo y nuevas capacidades (p. ej. imágenes).</p>
+                </div>
+                <div className="rounded-xl p-4" style={{ background: "#ffffff", border: "1px solid rgba(124,58,237,0.18)" }}>
+                  <p style={{ ...sub, color: "#7c3aed" }}>Subversión (4.5 → 4.6)</p>
+                  <p style={{ ...para, margin: 0, fontSize: "0.82rem" }}>Refinamiento: mismos parámetros base, mejor comportamiento. Como recalibrar el mismo motor. Menos alucinaciones, mejor seguimiento de instrucciones y ajuste de tono.</p>
+                </div>
+              </div>
+              <div className="rounded-xl p-4 mb-3" style={{ background: "#f3e8ff", border: "1px solid rgba(124,58,237,0.18)" }}>
+                <div style={{ ...eyebrow, marginBottom: 6 }}>Ejemplo práctico clave</div>
+                <p style={{ ...para, margin: 0 }}>En 2024, Llama 3 salió con <strong>menos parámetros</strong> que GPT-4 (2023) y aun así lo superó en varios benchmarks. ¿Por qué? Mejores datos, técnicas más modernas y arquitecturas más eficientes. Más parámetros = más potencial, pero el entrenamiento y los datos deciden si ese potencial se vuelve capacidad real.</p>
+              </div>
+
+              {/* 4 */}
+              <div className="flex items-center gap-3 mb-3 mt-7"><Num n="4" /><h3 style={heading}>Modelos actuales</h3></div>
+              <Table head={["Modelo", "Params", "Contexto", "Fortaleza"]} rows={modelRows} mono={[1, 2]} />
+              <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.72rem", color: "#9ca3af", lineHeight: 1.55, margin: "0 0 8px" }}>Los parámetros de modelos propietarios (Claude, GPT, Gemini) no se publican oficialmente; los valores con "est." provienen de análisis de la industria.</p>
+
+              {/* 5 */}
+              <div className="rounded-xl p-5 mt-6" style={{ background: "linear-gradient(135deg,#eef2ff,#f3e8ff)", borderLeft: "3px solid #7c3aed" }}>
+                <div style={{ ...eyebrow, marginBottom: 6 }}>La idea en una frase</div>
+                <p style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.95rem", color: "#1e3a8a", lineHeight: 1.55, margin: 0 }}>Los parámetros son la memoria del modelo. Más parámetros = más capacidad de memoria y razonamiento. Pero la calidad del entrenamiento — datos, técnicas, tiempo — decide si esa memoria se llena de conocimiento útil o de ruido.</p>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function LLMSection() {
+  const [showParams, setShowParams] = useState(false);
   return (
     <section id="llm-section" className="py-24 px-6" style={{ background: "#f5f7ff" }}>
       <div className="max-w-6xl mx-auto">
@@ -1929,6 +2083,15 @@ function LLMSection() {
                     <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "#7c3aed", background: "#f3e8ff", padding: "0.15rem 0.5rem", borderRadius: "0.25rem" }}>{c.mono}</span>
                   </div>
                   <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.85rem", color: "#6b7280", lineHeight: 1.6 }}>{c.definition}</p>
+                  {c.term === "Parameters" && (
+                    <button
+                      onClick={() => setShowParams(true)}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-lg"
+                      style={{ padding: "0.45rem 0.8rem", background: "linear-gradient(135deg,#3b5bdb,#7c3aed)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.78rem", boxShadow: "0 4px 14px rgba(124,58,237,0.25)" }}
+                    >
+                      <BookOpen size={13} /> Explicación completa →
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -2117,6 +2280,7 @@ function LLMSection() {
         </motion.div>
 
       </div>
+      <ParamsExplainerModal open={showParams} onClose={() => setShowParams(false)} />
     </section>
   );
 }
@@ -7535,6 +7699,173 @@ const FLOW = [
   { from: "Reviewer", to: "Orquestador → Tú", desc: "Consolida resultado, crea PR, reporta desvíos", color: "#3b5bdb" },
 ];
 
+// ─── Interactive step-by-step flow ────────────────────────────────────────────
+const FLOW_STEPS = [
+  {
+    actor: "Tú (Humano)", role: "Punto de partida", color: "#3b5bdb", icon: <User size={16} />,
+    title: "Defines el objetivo",
+    what: "Le das al Orquestador una meta en lenguaje natural. No escribes specs ni código — solo el qué, no el cómo.",
+    artifact: { label: "prompt inicial", lang: "texto", code: '"Construye un sistema que analice ventas\ny genere reportes automáticos"' },
+    mcp: null,
+    why: "El humano solo aporta intención. Todo el rigor técnico lo construyen los agentes en los siguientes pasos — y tú lo apruebas, no lo redactas.",
+    gate: false,
+  },
+  {
+    actor: "Orquestador → Planner", role: "Recolección de contexto", color: "#7c3aed", icon: <Target size={16} />,
+    title: "El Planner lee la realidad del proyecto",
+    what: "El Orquestador delega en el Planner, que NO inventa: usa MCP para leer tickets de Jira, el schema real de la base de datos y la documentación existente.",
+    artifact: { label: "contexto recolectado", lang: "fuentes", code: "✓ Jira      → 3 tickets de ventas\n✓ Postgres  → schema `sales`, `orders`\n✓ Notion    → política de reportes Q2" },
+    mcp: "Sin MCP el Planner solo adivinaría. Con MCP parte de datos reales.",
+    why: "Aquí se evita el error #1 del 'vibe coding': suponer cómo es el sistema. El Planner observa antes de proponer.",
+    gate: false,
+  },
+  {
+    actor: "Planner", role: "Generación de specs", color: "#7c3aed", icon: <FileText size={16} />,
+    title: "Escribe requirements.md + design.md",
+    what: "Con el contexto real, el Planner redacta los requerimientos en notación EARS (WHEN → SHALL) y el diseño técnico con decisiones justificadas.",
+    artifact: { label: "requirements.md", lang: "EARS", code: "WHEN llegan datos de ventas nuevos\nTHE SYSTEM SHALL agregarlos por región\nAND generar reporte PDF en < 30s\nAND notificar al canal #ventas" },
+    mcp: null,
+    why: "Los documentos son ahora el artefacto principal. El código será una consecuencia de estos docs — no al revés.",
+    gate: false,
+  },
+  {
+    actor: "Tú (Humano)", role: "🔒 Puerta de aprobación", color: "#f59e0b", icon: <Lock size={16} />,
+    title: "Revisas y apruebas los specs",
+    what: "El flujo SE DETIENE. Lees requirements.md y design.md. Puedes editar, rechazar o aprobar. Nada de código se escribe hasta que des el OK.",
+    artifact: { label: "decisión humana", lang: "gate", code: "[ ] Rechazar y pedir cambios\n[✓] Aprobar requirements.md\n[✓] Aprobar design.md\n     → Developer desbloqueado" },
+    mcp: null,
+    why: "Esta es la diferencia clave del SDD: el control humano ocurre ANTES del código, cuando corregir cuesta segundos, no semanas.",
+    gate: true,
+  },
+  {
+    actor: "Developer", role: "Ejecución", color: "#0891b2", icon: <Code2 size={16} />,
+    title: "Genera tasks.md y ejecuta paso a paso",
+    what: "El Developer descompone los specs en tareas ordenadas y las ejecuta una por una. Usa MCP para correr tests, leer logs y hacer commits reales.",
+    artifact: { label: "tasks.md", lang: "checklist", code: "[✓] 1. Modelo de datos de ventas\n[✓] 2. Agregación por región\n[⟳] 3. Generador de PDF\n[ ] 4. Notificación a Slack" },
+    mcp: "El Developer corre CI/CD, lee logs de producción y hace commits via MCP — se autocorrige con datos reales.",
+    why: "No pasa a la tarea siguiente sin verificar la actual contra su criterio de aceptación. Si una falla, hace rollback.",
+    gate: false,
+  },
+  {
+    actor: "Reviewer → Tú", role: "Validación y cierre", color: "#059669", icon: <CheckCircle size={16} />,
+    title: "Verifica cada criterio y crea el PR",
+    what: "El Reviewer comprueba el código contra CADA línea SHALL de requirements.md (no contra su opinión). El Orquestador consolida y te reporta.",
+    artifact: { label: "reporte final", lang: "resultado", code: "✓ 4/4 criterios EARS cumplidos\n✓ Reporte PDF generado en 18s\n✓ PR #142 creado y listo\n→ Desvíos: 0" },
+    mcp: "El Reviewer usa MCP para abrir el Pull Request en GitHub automáticamente.",
+    why: "La validación es objetiva y trazable: cada criterio aprobado mapea a un requerimiento que TÚ aprobaste al inicio.",
+    gate: false,
+  },
+];
+
+function InteractiveFlow() {
+  const [active, setActive] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const total = FLOW_STEPS.length;
+  const step = FLOW_STEPS[active];
+
+  useEffect(() => {
+    if (!playing) return;
+    if (active >= total - 1) { setPlaying(false); return; }
+    const t = setTimeout(() => setActive((a) => Math.min(a + 1, total - 1)), 2600);
+    return () => clearTimeout(t);
+  }, [playing, active, total]);
+
+  const go = (i) => { setPlaying(false); setActive(Math.max(0, Math.min(i, total - 1))); };
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(59,91,219,0.12)", boxShadow: "0 4px 20px rgba(59,91,219,0.06)" }}>
+      {/* Controls */}
+      <div className="flex items-center gap-2 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid rgba(59,91,219,0.08)", background: "#fafbff" }}>
+        <button onClick={() => go(active - 1)} disabled={active === 0}
+          className="flex items-center justify-center rounded-lg"
+          style={{ width: 34, height: 34, background: active === 0 ? "#eef2ff" : "#fff", border: "1px solid rgba(59,91,219,0.15)", color: active === 0 ? "#c7d2fe" : "#3b5bdb", cursor: active === 0 ? "default" : "pointer" }} aria-label="Anterior">
+          <ChevronLeft size={17} />
+        </button>
+        <button onClick={() => { if (active >= total - 1) { setActive(0); setPlaying(true); } else setPlaying((p) => !p); }}
+          className="flex items-center gap-1.5 rounded-lg px-3.5"
+          style={{ height: 34, background: "linear-gradient(135deg,#3b5bdb,#7c3aed)", border: "none", color: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.76rem" }}>
+          {playing ? <Pause size={14} /> : (active >= total - 1 ? <RotateCcw size={14} /> : <Play size={14} />)}
+          {playing ? "Pausa" : (active >= total - 1 ? "Repetir" : "Reproducir")}
+        </button>
+        <button onClick={() => go(active + 1)} disabled={active === total - 1}
+          className="flex items-center justify-center rounded-lg"
+          style={{ width: 34, height: 34, background: active === total - 1 ? "#eef2ff" : "#fff", border: "1px solid rgba(59,91,219,0.15)", color: active === total - 1 ? "#c7d2fe" : "#3b5bdb", cursor: active === total - 1 ? "default" : "pointer" }} aria-label="Siguiente">
+          <ChevronRight size={17} />
+        </button>
+        <div className="flex-1" />
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7rem", color: "#9ca3af" }}>Paso {active + 1} / {total}</span>
+      </div>
+
+      {/* Stepper rail */}
+      <div className="flex items-stretch gap-0 px-4 pt-4 pb-1 overflow-x-auto">
+        {FLOW_STEPS.map((s, i) => (
+          <button key={i} onClick={() => go(i)} className="flex flex-col items-center flex-shrink-0" style={{ background: "none", border: "none", cursor: "pointer", minWidth: 60, position: "relative" }}>
+            {i < total - 1 && (
+              <div style={{ position: "absolute", top: 15, left: "50%", width: "100%", height: 2, background: i < active ? s.color : "rgba(59,91,219,0.12)", zIndex: 0 }} />
+            )}
+            <div style={{
+              width: 32, height: 32, borderRadius: "50%", zIndex: 1,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: i <= active ? s.color : "#fff",
+              color: i <= active ? "#fff" : "#c7d2fe",
+              border: i === active ? `2px solid ${s.color}` : `2px solid ${i < active ? s.color : "rgba(59,91,219,0.15)"}`,
+              boxShadow: i === active ? `0 0 0 4px ${s.color}22` : "none",
+              transition: "all .25s ease", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7rem", fontWeight: 700,
+            }}>
+              {i < active ? <Check size={14} /> : i + 1}
+            </div>
+            <span style={{ marginTop: 6, fontFamily: "'Inter',sans-serif", fontSize: "0.58rem", fontWeight: i === active ? 700 : 500, color: i === active ? s.color : "#9ca3af", textAlign: "center", lineHeight: 1.2, maxWidth: 72 }}>
+              {s.gate ? "🔒 " : ""}{s.role.replace("🔒 ", "")}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Active step detail */}
+      <AnimatePresence mode="wait">
+        <motion.div key={active}
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.28 }}
+          className="px-5 py-5">
+
+          <div className="flex items-center gap-3 mb-3">
+            <div className="rounded-xl flex items-center justify-center flex-shrink-0" style={{ width: 38, height: 38, background: `${step.color}12`, color: step.color }}>{step.icon}</div>
+            <div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem", letterSpacing: "0.06em", textTransform: "uppercase", color: step.color }}>{step.actor}</div>
+              <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.05rem", color: "#111827", lineHeight: 1.2 }}>{step.title}</div>
+            </div>
+          </div>
+
+          <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.85rem", color: "#374151", lineHeight: 1.65, margin: "0 0 14px" }}>{step.what}</p>
+
+          {/* Artifact */}
+          <div className="rounded-xl overflow-hidden mb-3" style={{ border: `1px solid ${step.color}22` }}>
+            <div className="flex items-center justify-between px-3 py-2" style={{ background: `${step.color}0d` }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: step.color, fontWeight: 600 }}>{step.artifact.label}</span>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.55rem", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em" }}>{step.artifact.lang}</span>
+            </div>
+            <pre style={{ margin: 0, padding: "12px 14px", background: step.gate ? "#fffbeb" : "#0d0e1a", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", lineHeight: 1.7, color: step.gate ? "#92400e" : "#e0e7ff", whiteSpace: "pre-wrap", overflowX: "auto" }}>{step.artifact.code}</pre>
+          </div>
+
+          {/* MCP note */}
+          {step.mcp && (
+            <div className="rounded-xl px-3.5 py-2.5 mb-3 flex items-start gap-2" style={{ background: "#eef2ff", border: "1px solid rgba(59,91,219,0.14)" }}>
+              <Plug size={13} style={{ color: "#3b5bdb", flexShrink: 0, marginTop: 2 }} />
+              <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.74rem", color: "#1e40af", lineHeight: 1.55, margin: 0 }}><strong>MCP:</strong> {step.mcp}</p>
+            </div>
+          )}
+
+          {/* Why */}
+          <div className="rounded-xl px-3.5 py-3 flex items-start gap-2" style={{ background: step.gate ? "linear-gradient(135deg,#fffbeb,#fef3c7)" : "#f5f7ff", borderLeft: `3px solid ${step.color}` }}>
+            <span style={{ fontSize: 13, flexShrink: 0 }}>{step.gate ? "🔑" : "💡"}</span>
+            <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.76rem", color: step.gate ? "#78350f" : "#4b5563", lineHeight: 1.6, margin: 0 }}><strong style={{ color: step.gate ? "#92400e" : "#374151" }}>Por qué importa: </strong>{step.why}</p>
+          </div>
+
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ─── Phase cards ──────────────────────────────────────────────────────────────
 interface Phase {
   num: string; icon: React.ReactNode; title: string; subtitle: string;
@@ -8397,25 +8728,11 @@ function SDDSection() {
               </div>
 
               <div>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.58rem", color:"#9ca3af", letterSpacing:"0.08em", marginBottom:12 }}>FLUJO UNIFICADO SDD + AGENTES + MCP</div>
-                <div className="flex flex-col">
-                  {FLOW.map((step, i) => (
-                    <motion.div key={i} initial={{ opacity:0, x:-16 }} animate={{ opacity:1, x:0 }} transition={{ duration:0.35, delay:i * 0.09 }} className="flex items-start gap-4">
-                      <div className="flex flex-col items-center flex-shrink-0" style={{ width:26 }}>
-                        <div style={{ width:22, height:22, borderRadius:"50%", background:step.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#fff", fontWeight:700, flexShrink:0 }}>{i + 1}</div>
-                        {i < FLOW.length - 1 && <div style={{ width:2, height:44, background:`linear-gradient(${step.color}, ${FLOW[i+1].color})`, opacity:0.25, borderRadius:2 }} />}
-                      </div>
-                      <div className="rounded-2xl p-4 mb-2 flex-1" style={{ background:"#fff", border:`1px solid ${step.color}18`, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:"0.8rem", color:"#111827" }}>{step.from}</span>
-                          <ChevronRight size={12} style={{ color:step.color, flexShrink:0 }} />
-                          <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:"0.8rem", color:step.color }}>{step.to}</span>
-                        </div>
-                        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.73rem", color:"#9ca3af", margin:0, lineHeight:1.5 }}>{step.desc}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.58rem", color:"#9ca3af", letterSpacing:"0.08em", marginBottom:8 }}>FLUJO PASO A PASO — INTERACTIVO</div>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.76rem", color:"#9ca3af", lineHeight:1.55, marginBottom:12 }}>
+                  Recorre el flujo completo SDD + Agentes + MCP. Avanza paso a paso o pulsa <strong>Reproducir</strong> para verlo automáticamente. Cada paso muestra qué actor interviene, qué artefacto produce y por qué importa.
+                </p>
+                <InteractiveFlow />
               </div>
 
               <div className="rounded-2xl p-5" style={{ background:"linear-gradient(135deg,#1e1b4b,#312e81)", border:"1px solid rgba(99,102,241,0.3)" }}>
@@ -10456,320 +10773,3 @@ function AgentDemo() {
                   nodeId={selectedNodeId}
                   onClose={() => setSelectedNodeId(null)}
                 />
-              ) : lastVisibleStep ? (
-                <StepExplanationCard key={`step-${lastVisibleStep.content.slice(0, 20)}`} step={lastVisibleStep} />
-              ) : (
-                <motion.div
-                  key="hint"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="rounded-2xl p-4 flex items-center gap-3"
-                  style={{ background: "#f8fafc", border: "1px solid rgba(59,91,219,0.08)" }}
-                >
-                  <ArrowRightLeft size={14} style={{ color: "#94a3b8", flexShrink: 0 }} />
-                  <p
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: "0.78rem",
-                      color: "#94a3b8",
-                      lineHeight: 1.5,
-                      margin: 0,
-                    }}
-                  >
-                    Haz clic en un nodo del flujo para ver qué ocurre en ese punto del ciclo del agente.
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Integrations */}
-            <div
-              className="rounded-2xl p-4"
-              style={{ background: "#ffffff", border: "1px solid rgba(59,91,219,0.1)" }}
-            >
-              <div
-                className="mb-2"
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: "0.62rem",
-                  letterSpacing: "0.1em",
-                  color: "#475569",
-                }}
-              >
-                SISTEMAS INTEGRADOS
-              </div>
-              <div className="flex flex-col gap-1.5">
-                {useCase.integrations.map((intg) => (
-                  <div key={intg.name} className="flex items-center gap-2">
-                    <div
-                      className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ background: `${intg.color}22`, color: intg.color }}
-                    >
-                      {intg.icon}
-                    </div>
-                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "#64748b" }}>
-                      {intg.name}
-                    </span>
-                    <span
-                      className="ml-auto w-1.5 h-1.5 rounded-full"
-                      style={{
-                        background: running ? "#22c55e" : done ? "#3b5bdb" : "#9ca3af",
-                        boxShadow: running ? "0 0 6px #22c55e" : "none",
-                        transition: "all 0.3s",
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Progress */}
-            <div
-              className="rounded-2xl p-4"
-              style={{ background: "#ffffff", border: "1px solid rgba(59,91,219,0.1)" }}
-            >
-              <div
-                className="mb-2 flex items-center justify-between"
-                style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.62rem", letterSpacing: "0.1em", color: "#475569" }}
-              >
-                <span>PROGRESO</span>
-                <span style={{ color: "#3b5bdb" }}>
-                  {Math.round((visibleCount / useCase.steps.length) * 100)}%
-                </span>
-              </div>
-              <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(59,91,219,0.1)" }}>
-                <motion.div
-                  className="h-full rounded-full"
-                  animate={{ width: `${(visibleCount / useCase.steps.length) * 100}%` }}
-                  transition={{ type: "spring", stiffness: 80, damping: 20 }}
-                  style={{ background: "linear-gradient(90deg, #3b5bdb, #7c3aed)" }}
-                />
-              </div>
-              <div className="mt-3 flex flex-col gap-1">
-                {useCase.steps.map((step, i) => {
-                  const visible = i < visibleCount;
-                  const active = running && i === visibleCount - 1;
-                  const node = FLOW_NODE_BY_ID[step.flowNode];
-                  return (
-                    <div key={i} className="flex items-center gap-2">
-                      <div
-                        className="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all duration-300"
-                        style={{
-                          background: active ? node?.activeColor ?? "#3b5bdb" : visible ? "#22c55e" : "#e5e7eb",
-                          boxShadow: active ? `0 0 6px ${node?.activeColor ?? "#3b5bdb"}80` : "none",
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontFamily: "'JetBrains Mono', monospace",
-                          fontSize: "0.62rem",
-                          color: visible ? "#6b7280" : "#d1d5db",
-                          transition: "color 0.3s",
-                        }}
-                      >
-                        {step.type === "think" ? "think" : step.type === "call" ? step.tool : step.type}
-                      </span>
-                      {visible && (
-                        <span
-                          className="ml-auto"
-                          style={{
-                            fontSize: "10px",
-                            opacity: 0.6,
-                          }}
-                        >
-                          {node?.emoji}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Done stats */}
-            <AnimatePresence>
-              {done && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="rounded-2xl p-5"
-                  style={{ background: "#eef2ff", border: "1px solid rgba(59,91,219,0.25)" }}
-                >
-                  <div
-                    className="text-2xl mb-1"
-                    style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, color: "#3b5bdb" }}
-                  >
-                    ✓ Completado
-                  </div>
-                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.78rem", color: "#6366f1", lineHeight: 1.55 }}>
-                    {useCase.steps.length} pasos · {useCase.integrations.length} sistemas conectados
-                    {useCase.isMCP && " · Protocolo MCP"}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-
-      {/* Workflow modal */}
-      <AnimatePresence>
-        {showWorkflow && (
-          <WorkflowModal
-            useCaseId={selectedId}
-            useCaseTitle={useCase.title}
-            onClose={() => setShowWorkflow(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Agent Builder modal */}
-      <AnimatePresence>
-        {showBuilder && (
-          <AgentBuilder onClose={() => setShowBuilder(false)} />
-        )}
-      </AnimatePresence>
-    </section>
-  );
-}
-
-
-// ===== App =====
-const SECTION_COMPONENTS: Record<SectionId, React.ComponentType> = {
-  ia:     AISection,
-  llms:   LLMSection,
-  tokens: TokenizerSection,
-  agents: AgentsSection,
-  sdd:    SDDSection,
-  mcp:    MCPSection,
-  demo:   AgentDemo,
-};
-
-// Page transition variants
-const homeVariants = {
-  initial: { opacity: 0, scale: 1.03 },
-  animate: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
-  exit:    { opacity: 0, scale: 0.97, transition: { duration: 0.25, ease: "easeIn" } },
-};
-
-const sectionVariants = {
-  initial: { opacity: 0, y: 32 },
-  animate: { opacity: 1, y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] } },
-  exit:    { opacity: 0, y: -24, transition: { duration: 0.22, ease: "easeIn" } },
-};
-
-function App() {
-  const [current, setCurrent] = useState<SectionId | null>(null);
-
-  const goHome = useCallback(() => setCurrent(null), []);
-  const goTo   = useCallback((id: SectionId) => setCurrent(id), []);
-
-  const SectionContent = current ? SECTION_COMPONENTS[current] : null;
-
-  return (
-    <div className="w-full h-screen overflow-hidden" style={{ background: "#f5f7ff" }}>
-      <AnimatePresence mode="wait">
-        {current === null ? (
-          <motion.div
-            key="home"
-            variants={homeVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="w-full h-full overflow-y-auto"
-            style={{ scrollbarWidth: "none" }}
-          >
-            <HomeScreen onSelect={goTo} />
-          </motion.div>
-        ) : (
-          <motion.div
-            key={current}
-            variants={sectionVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="w-full h-full"
-          >
-            <SectionShell
-              sectionId={current}
-              onBack={goHome}
-              onNavigate={goTo}
-            >
-              {SectionContent && <SectionContent />}
-            </SectionShell>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-
-const __root=createRoot(document.getElementById("root"));
-__root.render(React.createElement(App));
-
-// Robustness: if requestAnimationFrame is throttled (offscreen/inactive iframe),
-// Framer Motion never advances past the hidden `initial` state. Detect that and
-// reveal content instantly so the artifact is never blank.
-let __rafFired = false;
-requestAnimationFrame(() => { __rafFired = true; });
-setTimeout(() => {
-  if (__rafFired) return; // RAF works -> real animations (incl. whileInView), leave untouched
-  // Throttled/offscreen context (e.g. background iframe): requestAnimationFrame
-  // never advances, so Framer Motion stays stuck at the hidden `initial` state.
-  // Force everything visible with a !important rule that motion's inline styles
-  // cannot override. Only ever runs when RAF is dead — never in a live tab.
-  try { MotionGlobalConfig.skipAnimations = true; } catch (e) {}
-  const st = document.createElement('style');
-  st.textContent = '#root *{opacity:1 !important;}';
-  document.head.appendChild(st);
-}, 900);
-
-</script>
-<script type="module">
-  (async function () {
-    try {
-      const src = document.getElementById("__bundle_src").textContent;
-      const { code } = Babel.transform(src, {
-        filename: "bundle.tsx",
-        sourceType: "module",
-        compact: true,
-        comments: false,
-        presets: [
-          ["react"],
-          ["typescript", { isTSX: true, allExtensions: true, allowDeclareFields: true }],
-        ],
-      });
-      const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
-      await import(url);
-    } catch (err) {
-      console.error("Bundle load/transform failed:", err);
-      const boot = document.getElementById("boot");
-      if (boot) {
-        boot.innerHTML = '<div style="color:#fca5a5;font-family:monospace;font-size:12px;max-width:80%;text-align:center;white-space:pre-wrap">' +
-          (err && err.message ? err.message : String(err)) + "</div>";
-      }
-    }
-  })();
-</script>
-
-<script>
-  // hide boot splash once App has mounted content into #root
-  (function () {
-    var tries = 0;
-    var timer = setInterval(function () {
-      tries++;
-      var root = document.getElementById("root");
-      if (root && root.childElementCount > 0) {
-        var boot = document.getElementById("boot");
-        if (boot) { boot.classList.add("hide"); setTimeout(function(){ boot.remove(); }, 600); }
-        clearInterval(timer);
-      }
-      if (tries > 200) clearInterval(timer); // ~40s safety
-    }, 200);
-  })();
-</script>
-</body>
-</html>
