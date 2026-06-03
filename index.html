@@ -10773,3 +10773,320 @@ function AgentDemo() {
                   nodeId={selectedNodeId}
                   onClose={() => setSelectedNodeId(null)}
                 />
+              ) : lastVisibleStep ? (
+                <StepExplanationCard key={`step-${lastVisibleStep.content.slice(0, 20)}`} step={lastVisibleStep} />
+              ) : (
+                <motion.div
+                  key="hint"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="rounded-2xl p-4 flex items-center gap-3"
+                  style={{ background: "#f8fafc", border: "1px solid rgba(59,91,219,0.08)" }}
+                >
+                  <ArrowRightLeft size={14} style={{ color: "#94a3b8", flexShrink: 0 }} />
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: "0.78rem",
+                      color: "#94a3b8",
+                      lineHeight: 1.5,
+                      margin: 0,
+                    }}
+                  >
+                    Haz clic en un nodo del flujo para ver qué ocurre en ese punto del ciclo del agente.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Integrations */}
+            <div
+              className="rounded-2xl p-4"
+              style={{ background: "#ffffff", border: "1px solid rgba(59,91,219,0.1)" }}
+            >
+              <div
+                className="mb-2"
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: "0.62rem",
+                  letterSpacing: "0.1em",
+                  color: "#475569",
+                }}
+              >
+                SISTEMAS INTEGRADOS
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {useCase.integrations.map((intg) => (
+                  <div key={intg.name} className="flex items-center gap-2">
+                    <div
+                      className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${intg.color}22`, color: intg.color }}
+                    >
+                      {intg.icon}
+                    </div>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "#64748b" }}>
+                      {intg.name}
+                    </span>
+                    <span
+                      className="ml-auto w-1.5 h-1.5 rounded-full"
+                      style={{
+                        background: running ? "#22c55e" : done ? "#3b5bdb" : "#9ca3af",
+                        boxShadow: running ? "0 0 6px #22c55e" : "none",
+                        transition: "all 0.3s",
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Progress */}
+            <div
+              className="rounded-2xl p-4"
+              style={{ background: "#ffffff", border: "1px solid rgba(59,91,219,0.1)" }}
+            >
+              <div
+                className="mb-2 flex items-center justify-between"
+                style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.62rem", letterSpacing: "0.1em", color: "#475569" }}
+              >
+                <span>PROGRESO</span>
+                <span style={{ color: "#3b5bdb" }}>
+                  {Math.round((visibleCount / useCase.steps.length) * 100)}%
+                </span>
+              </div>
+              <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(59,91,219,0.1)" }}>
+                <motion.div
+                  className="h-full rounded-full"
+                  animate={{ width: `${(visibleCount / useCase.steps.length) * 100}%` }}
+                  transition={{ type: "spring", stiffness: 80, damping: 20 }}
+                  style={{ background: "linear-gradient(90deg, #3b5bdb, #7c3aed)" }}
+                />
+              </div>
+              <div className="mt-3 flex flex-col gap-1">
+                {useCase.steps.map((step, i) => {
+                  const visible = i < visibleCount;
+                  const active = running && i === visibleCount - 1;
+                  const node = FLOW_NODE_BY_ID[step.flowNode];
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <div
+                        className="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all duration-300"
+                        style={{
+                          background: active ? node?.activeColor ?? "#3b5bdb" : visible ? "#22c55e" : "#e5e7eb",
+                          boxShadow: active ? `0 0 6px ${node?.activeColor ?? "#3b5bdb"}80` : "none",
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontSize: "0.62rem",
+                          color: visible ? "#6b7280" : "#d1d5db",
+                          transition: "color 0.3s",
+                        }}
+                      >
+                        {step.type === "think" ? "think" : step.type === "call" ? step.tool : step.type}
+                      </span>
+                      {visible && (
+                        <span
+                          className="ml-auto"
+                          style={{
+                            fontSize: "10px",
+                            opacity: 0.6,
+                          }}
+                        >
+                          {node?.emoji}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Done stats */}
+            <AnimatePresence>
+              {done && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="rounded-2xl p-5"
+                  style={{ background: "#eef2ff", border: "1px solid rgba(59,91,219,0.25)" }}
+                >
+                  <div
+                    className="text-2xl mb-1"
+                    style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, color: "#3b5bdb" }}
+                  >
+                    ✓ Completado
+                  </div>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.78rem", color: "#6366f1", lineHeight: 1.55 }}>
+                    {useCase.steps.length} pasos · {useCase.integrations.length} sistemas conectados
+                    {useCase.isMCP && " · Protocolo MCP"}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      {/* Workflow modal */}
+      <AnimatePresence>
+        {showWorkflow && (
+          <WorkflowModal
+            useCaseId={selectedId}
+            useCaseTitle={useCase.title}
+            onClose={() => setShowWorkflow(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Agent Builder modal */}
+      <AnimatePresence>
+        {showBuilder && (
+          <AgentBuilder onClose={() => setShowBuilder(false)} />
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
+
+// ===== App =====
+const SECTION_COMPONENTS: Record<SectionId, React.ComponentType> = {
+  ia:     AISection,
+  llms:   LLMSection,
+  tokens: TokenizerSection,
+  agents: AgentsSection,
+  sdd:    SDDSection,
+  mcp:    MCPSection,
+  demo:   AgentDemo,
+};
+
+// Page transition variants
+const homeVariants = {
+  initial: { opacity: 0, scale: 1.03 },
+  animate: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+  exit:    { opacity: 0, scale: 0.97, transition: { duration: 0.25, ease: "easeIn" } },
+};
+
+const sectionVariants = {
+  initial: { opacity: 0, y: 32 },
+  animate: { opacity: 1, y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] } },
+  exit:    { opacity: 0, y: -24, transition: { duration: 0.22, ease: "easeIn" } },
+};
+
+function App() {
+  const [current, setCurrent] = useState<SectionId | null>(null);
+
+  const goHome = useCallback(() => setCurrent(null), []);
+  const goTo   = useCallback((id: SectionId) => setCurrent(id), []);
+
+  const SectionContent = current ? SECTION_COMPONENTS[current] : null;
+
+  return (
+    <div className="w-full h-screen overflow-hidden" style={{ background: "#f5f7ff" }}>
+      <AnimatePresence mode="wait">
+        {current === null ? (
+          <motion.div
+            key="home"
+            variants={homeVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="w-full h-full overflow-y-auto"
+            style={{ scrollbarWidth: "none" }}
+          >
+            <HomeScreen onSelect={goTo} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key={current}
+            variants={sectionVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="w-full h-full"
+          >
+            <SectionShell
+              sectionId={current}
+              onBack={goHome}
+              onNavigate={goTo}
+            >
+              {SectionContent && <SectionContent />}
+            </SectionShell>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+
+const __root=createRoot(document.getElementById("root"));
+__root.render(React.createElement(App));
+
+// Robustness: if requestAnimationFrame is throttled (offscreen/inactive iframe),
+// Framer Motion never advances past the hidden `initial` state. Detect that and
+// reveal content instantly so the artifact is never blank.
+let __rafFired = false;
+requestAnimationFrame(() => { __rafFired = true; });
+setTimeout(() => {
+  if (__rafFired) return; // RAF works -> real animations (incl. whileInView), leave untouched
+  // Throttled/offscreen context (e.g. background iframe): requestAnimationFrame
+  // never advances, so Framer Motion stays stuck at the hidden `initial` state.
+  // Force everything visible with a !important rule that motion's inline styles
+  // cannot override. Only ever runs when RAF is dead — never in a live tab.
+  try { MotionGlobalConfig.skipAnimations = true; } catch (e) {}
+  const st = document.createElement('style');
+  st.textContent = '#root *{opacity:1 !important;}';
+  document.head.appendChild(st);
+}, 900);
+
+</script>
+<script type="module">
+  (async function () {
+    try {
+      const src = document.getElementById("__bundle_src").textContent;
+      const { code } = Babel.transform(src, {
+        filename: "bundle.tsx",
+        sourceType: "module",
+        compact: true,
+        comments: false,
+        presets: [
+          ["react"],
+          ["typescript", { isTSX: true, allExtensions: true, allowDeclareFields: true }],
+        ],
+      });
+      const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+      await import(url);
+    } catch (err) {
+      console.error("Bundle load/transform failed:", err);
+      const boot = document.getElementById("boot");
+      if (boot) {
+        boot.innerHTML = '<div style="color:#fca5a5;font-family:monospace;font-size:12px;max-width:80%;text-align:center;white-space:pre-wrap">' +
+          (err && err.message ? err.message : String(err)) + "</div>";
+      }
+    }
+  })();
+</script>
+
+<script>
+  // hide boot splash once App has mounted content into #root
+  (function () {
+    var tries = 0;
+    var timer = setInterval(function () {
+      tries++;
+      var root = document.getElementById("root");
+      if (root && root.childElementCount > 0) {
+        var boot = document.getElementById("boot");
+        if (boot) { boot.classList.add("hide"); setTimeout(function(){ boot.remove(); }, 600); }
+        clearInterval(timer);
+      }
+      if (tries > 200) clearInterval(timer); // ~40s safety
+    }, 200);
+  })();
+</script>
+</body>
+</html>
