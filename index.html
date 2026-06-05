@@ -1189,28 +1189,61 @@ function TechniqueCard({ t, open, onToggle }) {
   );
 }
 
-// 3) Laboratorio de tokens
+// 3) Laboratorio de tokens — con ejemplo en vivo
+const EX_QUESTION = "¿Cuáles son los beneficios de hacer ejercicio?";
+const EX_BENEFITS = [
+  { name: "Mejora la salud cardiovascular", exp: "porque fortalece el corazón y mejora la circulación" },
+  { name: "Ayuda a controlar el peso", exp: "ya que quema calorías y acelera el metabolismo" },
+  { name: "Reduce el estrés y la ansiedad", exp: "gracias a la liberación de endorfinas" },
+  { name: "Fortalece músculos y huesos", exp: "al aumentar la masa muscular y la densidad ósea" },
+  { name: "Mejora la calidad del sueño", exp: "favoreciendo un descanso más profundo" },
+];
+function buildAnswer(on) {
+  const items = EX_BENEFITS.slice(0, on.limite ? 3 : 5);
+  if (on.formato) {
+    const arr = items.map((b) => on.solo ? `"${b.name}"` : `{"beneficio":"${b.name}","detalle":"${b.exp}"}`);
+    return "[" + arr.join(",") + "]";
+  }
+  const pre = [];
+  if (!on.preambulo) pre.push("¡Claro que sí, con gusto te ayudo con tu pregunta!");
+  if (!on.norepetir) pre.push("Me preguntas cuáles son los beneficios de hacer ejercicio.");
+  if (on.vinetas) {
+    const body = items.map((b) => on.solo ? `• ${b.name}` : `• ${b.name}: ${b.exp}`).join("\n");
+    return (pre.length ? pre.join(" ") + "\n" : "") + body;
+  }
+  const sents = items.map((b) => on.solo ? b.name : `${b.name} ${b.exp}`);
+  const body = on.solo ? sents.join(", ") + "." : sents.join(". ") + ".";
+  return (pre.length ? pre.join(" ") + " " : "") + body;
+}
+const estTokens = (s) => Math.max(1, Math.round(s.length / 4));
+
 function TokenSaverLab() {
   const [on, setOn] = useState({});
   const toggle = (id) => setOn((s) => ({ ...s, [id]: !s[id] }));
-  const BASE = 540;
-  const totalCut = Math.min(0.82, TOKEN_TRICKS.reduce((a, t) => a + (on[t.id] ? t.cut : 0), 0));
-  const after = Math.round(BASE * (1 - totalCut));
-  const pct = Math.round(totalCut * 100);
-  // costo de salida aprox a $15 / 1M tokens, 1000 respuestas
-  const costBase = (BASE * 1000 / 1e6) * 15;
-  const costAfter = (after * 1000 / 1e6) * 15;
+
+  const activeCmds = TOKEN_TRICKS.filter((t) => on[t.id]).map((t) => t.cmd);
+  const userPrompt = EX_QUESTION + (activeCmds.length ? "\n" + activeCmds.join(" ") : "");
+  const baseAns = buildAnswer({});
+  const curAns = buildAnswer(on);
+  const baseTok = estTokens(baseAns);
+  const curTok = estTokens(curAns);
+  const pct = Math.max(0, Math.round(((baseTok - curTok) / baseTok) * 100));
+  const widthPct = Math.round((curTok / baseTok) * 100);
+  const costBase = (baseTok * 1000 / 1e6) * 15;
+  const costAfter = (curTok * 1000 / 1e6) * 15;
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(124,58,237,0.16)", boxShadow: "0 4px 24px rgba(124,58,237,0.07)" }}>
       <div className="px-5 py-4 flex items-center gap-3" style={{ background: "linear-gradient(135deg,#7c3aed,#0891b2)" }}>
         <Scissors size={18} style={{ color: "#fff" }} />
         <div>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem", letterSpacing: "0.1em", color: "rgba(255,255,255,0.85)" }}>LABORATORIO DE TOKENS</div>
-          <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.05rem", color: "#fff" }}>Activa trucos y mira cuánto ahorras</div>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem", letterSpacing: "0.1em", color: "rgba(255,255,255,0.85)" }}>LABORATORIO DE TOKENS · EJEMPLO EN VIVO</div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.05rem", color: "#fff" }}>Activa trucos y mira la respuesta encogerse</div>
         </div>
       </div>
+
       <div className="p-5 grid gap-4" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
+        {/* Trick toggles */}
         <div className="grid gap-2">
           {TOKEN_TRICKS.map((t) => {
             const a = !!on[t.id];
@@ -1221,32 +1254,57 @@ function TokenSaverLab() {
                   <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", color: a ? "#5b21b6" : "#374151", lineHeight: 1.4 }}>{t.cmd}</div>
                   <div style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.66rem", color: "#9ca3af" }}>{t.desc}</div>
                 </div>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.64rem", fontWeight: 600, color: a ? "#7c3aed" : "#cbd5e1", flexShrink: 0 }}>−{Math.round(t.cut * 100)}%</span>
+                {a && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem", fontWeight: 600, color: "#7c3aed", flexShrink: 0, background: "#ede9fe", padding: "2px 6px", borderRadius: 6 }}>activo</span>}
               </button>
             );
           })}
         </div>
 
-        {/* visualizer */}
+        {/* Live chat example */}
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(15,23,42,0.1)" }}>
+          {/* user prompt */}
+          <div className="px-4 py-3" style={{ background: "#f5f7ff", borderBottom: "1px solid rgba(59,91,219,0.1)" }}>
+            <div className="flex items-center gap-1.5 mb-1.5"><User size={11} style={{ color: "#3b5bdb" }} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem", letterSpacing: "0.06em", color: "#3b5bdb" }}>TU PROMPT</span></div>
+            <div style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.8rem", color: "#1e293b", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
+              {EX_QUESTION}
+              {activeCmds.length > 0 && <span style={{ color: "#7c3aed", fontWeight: 500 }}>{"\n" + activeCmds.join(" ")}</span>}
+            </div>
+          </div>
+          {/* model answer */}
+          <div className="px-4 py-3" style={{ background: "#fff" }}>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5"><Sparkles size={11} style={{ color: "#7c3aed" }} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem", letterSpacing: "0.06em", color: "#7c3aed" }}>RESPUESTA DEL MODELO</span></div>
+              <motion.span key={curTok} initial={{ scale: 1.25, color: "#059669" }} animate={{ scale: 1, color: "#9ca3af" }} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem" }}>≈ {curTok} tokens</motion.span>
+            </div>
+            <AnimatePresence mode="wait">
+              <motion.div key={curAns} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}
+                style={{ fontFamily: on.formato ? "'JetBrains Mono',monospace" : "'Inter',sans-serif", fontSize: on.formato ? "0.7rem" : "0.82rem", color: "#374151", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: on.formato ? "break-word" : "normal" }}>
+                {curAns}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* meters */}
         <div className="rounded-xl p-4" style={{ background: "#0d0e1a" }}>
           <div className="flex items-center justify-between mb-2">
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: "#94a3b8" }}>respuesta típica</span>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: "#64748b" }}>{BASE} tokens</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: "#94a3b8" }}>respuesta original (sin trucos)</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: "#64748b" }}>≈ {baseTok} tokens</span>
           </div>
           <div className="rounded-full overflow-hidden mb-3" style={{ height: 10, background: "rgba(255,255,255,0.08)" }}>
             <div style={{ height: "100%", width: "100%", background: "rgba(148,163,184,0.4)", borderRadius: 99 }} />
           </div>
           <div className="flex items-center justify-between mb-2">
             <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: "#7dd3fc" }}>con tus trucos</span>
-            <motion.span key={after} initial={{ scale: 1.2, color: "#34d399" }} animate={{ scale: 1, color: "#7dd3fc" }} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem" }}>{after} tokens</motion.span>
+            <motion.span key={curTok} initial={{ scale: 1.2, color: "#34d399" }} animate={{ scale: 1, color: "#7dd3fc" }} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem" }}>≈ {curTok} tokens</motion.span>
           </div>
           <div className="rounded-full overflow-hidden" style={{ height: 10, background: "rgba(255,255,255,0.08)" }}>
-            <motion.div animate={{ width: `${100 - pct}%` }} transition={{ duration: 0.4 }} style={{ height: "100%", background: "linear-gradient(90deg,#0ea5e9,#34d399)", borderRadius: 99 }} />
+            <motion.div animate={{ width: `${widthPct}%` }} transition={{ duration: 0.4 }} style={{ height: "100%", background: "linear-gradient(90deg,#0ea5e9,#34d399)", borderRadius: 99 }} />
           </div>
           <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
             <div>
               <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem", color: "#64748b" }}>AHORRO</div>
-              <motion.div key={pct} initial={{ scale: 1.15 }} animate={{ scale: 1 }} style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.4rem", color: "#34d399", lineHeight: 1 }}>{pct}%</motion.div>
+              <motion.div key={pct} initial={{ scale: 1.15 }} animate={{ scale: 1 }} style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.4rem", color: pct > 0 ? "#34d399" : "#64748b", lineHeight: 1 }}>{pct}%</motion.div>
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem", color: "#64748b" }}>COSTO / 1.000 RESPUESTAS</div>
@@ -1258,7 +1316,7 @@ function TokenSaverLab() {
           </div>
         </div>
         <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.7rem", color: "#9ca3af", lineHeight: 1.5, margin: 0 }}>
-          Cifras ilustrativas para mostrar el efecto relativo. La regla de oro: <strong style={{ color: "#7c3aed" }}>pide exactamente lo que necesitas y nada más</strong> — menos tokens de salida = menos costo y menos latencia.
+          El conteo de tokens se estima del texto real de la respuesta. La regla de oro: <strong style={{ color: "#7c3aed" }}>pide exactamente lo que necesitas y nada más</strong> — menos tokens de salida = menos costo y menos latencia.
         </p>
       </div>
     </div>
