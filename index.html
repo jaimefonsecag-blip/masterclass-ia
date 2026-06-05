@@ -5746,6 +5746,23 @@ const TEMPLATES: Record<string, Template> = {
       { id:"e8", from:"n1", to:"n5" },
     ],
   },
+  contract: {
+    name: "📄 Generador de Contratos",
+    nodes: [
+      { id:"t1", type:"trigger-manual",   x:60,  y:290 },
+      { id:"n1", type:"agent",            x:340, y:290 },
+      { id:"n2", type:"http",             x:620, y:140 },
+      { id:"n3", type:"http",             x:620, y:290 },
+      { id:"n4", type:"code",             x:620, y:440 },
+      { id:"n5", type:"respond",          x:900, y:290 },
+    ],
+    edges: [
+      { id:"e1", from:"t1", to:"n1" },
+      { id:"e2", from:"n1", to:"n2" }, { id:"e3", from:"n1", to:"n3" }, { id:"e4", from:"n1", to:"n4" },
+      { id:"e5", from:"n2", to:"n1" }, { id:"e6", from:"n3", to:"n1" }, { id:"e7", from:"n4", to:"n1" },
+      { id:"e8", from:"n1", to:"n5" },
+    ],
+  },
   asistente: {
     name: "🤖 Asistente Bancario",
     nodes: [
@@ -6016,6 +6033,191 @@ Headers:
     },
   },
 ];
+
+// ─── Contract Generator Lab data ──────────────────────────────────────────────
+const CONTRACT_MOCK_OUTPUTS: Record<string, string> = {
+  "t1": '{\n  "proceso": "originacion-credito-consumo",\n  "contextoFuncional": {\n    "dominio": "Originación de Crédito",\n    "actor": "Asesor Comercial",\n    "objetivoNegocio": "Formalizar un crédito de consumo"\n  },\n  "flujoProceso": [\n    { "paso": 1, "actividad": "validarCliente" },\n    { "paso": 2, "actividad": "evaluarCapacidadPago" },\n    { "paso": 3, "actividad": "generarContrato" }\n  ],\n  "entidad": {\n    "nombre": "ContratoCredito",\n    "campos": { "clienteId":"string", "monto":"number", "plazoMeses":"integer" }\n  }\n}',
+  "n2": '# Plantilla estándar de contrato (repo institucional)\n\nFormato: OpenAPI 3.0.3 (YAML)\nReglas:\n- info.title = "Contrato · {dominio}"\n- 1 path por actividad de creación\n- operationId = nombre de la actividad\n- requestBody.schema = entidad del JSON\n- responses: 1 por escenario de negocio/técnico\n\nEjemplo de esqueleto:\npaths:\n  /{recurso}:\n    post:\n      operationId: {actividad}\n      responses: { ... }',
+  "n3": '# Catálogo de códigos HTTP por escenario\n\nNEGOCIO:\n- 201 Created      → recurso creado\n- 409 Conflict     → ya existe / estado inválido\n- 422 Unprocessable→ regla de negocio incumplida\n- 403 Forbidden    → no autorizado por política\n\nTÉCNICO:\n- 400 Bad Request  → payload inválido\n- 500 Internal     → fallo del core\n- 503 Unavailable  → dependencia caída',
+  "n4": '# Code node — generación ejecutada ✓\n\nstdout:\n  ✓ contrato.yaml generado (OpenAPI 3.0.3)\n  ✓ 5 escenarios BDD derivados (Gherkin)\n      · 3 de negocio (201, 422, 409)\n      · 2 técnicos (400, 500)\n  ✓ schema validado contra la entidad\nexit_code: 0',
+  "n1": '# CONTRATO + BDD GENERADOS ✓\n\n## Contrato (YAML · OpenAPI 3.0.3)\nPOST /contratos-credito → generarContrato\nResponses: 201, 400, 409, 422, 500\n\n## Escenarios BDD (Gherkin)\n- [201·negocio] Contrato formalizado\n- [422·negocio] Capacidad insuficiente\n- [409·negocio] Crédito ya activo\n- [400·técnico] Payload inválido\n- [500·técnico] Falla del core\n\n✓ Contrato y pruebas consistentes entre sí',
+  "n5": '{\n  "delivered": true,\n  "artefactos": ["contrato.yaml", "contrato.feature"],\n  "escenarios_bdd": 5,\n  "codigos_http": [201, 400, 409, 422, 500],\n  "response_time_ms": 2980\n}',
+};
+
+const CONTRACT_LAB_STEPS = [
+  { nodeId:"t1", label:"1. Trigger Manual", explanation:"El analista entrega el JSON del flujo de proceso + contexto funcional (dominio, actor, objetivo, actividades y entidad). Este JSON llega al AI Agent como instrucción inicial." },
+  { nodeId:"n1", label:"2. AI Agent (Orquestador)", explanation:"El LLM lee el JSON y planifica: necesito la plantilla estándar de contrato, el catálogo de códigos HTTP y un generador. Llama las herramientas y sintetiza el resultado." },
+  { nodeId:"n2", label:"3. HTTP — Plantilla de contrato", explanation:"GET al repo con la plantilla estándar OpenAPI 3.0 (YAML). Define cómo se mapea la entidad del JSON a un schema y un path por actividad de creación." },
+  { nodeId:"n3", label:"4. HTTP — Catálogo de códigos HTTP", explanation:"GET al catálogo institucional de códigos por escenario: de negocio (201, 409, 422, 403) y técnicos (400, 500, 503). Garantiza consistencia entre contratos." },
+  { nodeId:"n4", label:"5. Code — Generador YAML + BDD", explanation:"El agente genera código que produce el contrato YAML y deriva un escenario BDD (Gherkin) por cada respuesta HTTP, etiquetado como negocio o técnico." },
+  { nodeId:"n5", label:"6. Responder", explanation:"Con plantilla + catálogo + generador, el agente entrega dos artefactos consistentes: el contrato YAML estandarizado y la batería de pruebas BDD con sus códigos HTTP." },
+];
+
+const CONTRACT_GUIDED_STEPS: GuidedStep[] = [
+  {
+    id:"c-add-trigger", step:1,
+    title:"Agrega el Trigger Manual",
+    instruction:"Arrastra un nodo Trigger Manual desde la paleta. Será la entrada donde llega el JSON del flujo de proceso y el contexto funcional.",
+    hint:"📂 Categoría Trigger → Manual (borde naranja)",
+    concept:"El JSON neutro (proceso + contexto + entidad) es el contrato de entrada del agente. Todo se deriva de él.",
+    configCode:`// Payload del Trigger\n{\n  "proceso": "originacion-credito-consumo",\n  "contextoFuncional": {\n    "dominio": "Originación de Crédito",\n    "actor": "Asesor Comercial",\n    "objetivoNegocio": "Formalizar un crédito"\n  },\n  "entidad": {\n    "nombre": "ContratoCredito",\n    "campos": { "monto":"number",\n      "plazoMeses":"integer" }\n  }\n}`,
+    validate:(nodes) => nodes.some(n => n.type === "trigger-manual"),
+  },
+  {
+    id:"c-add-agent", step:2,
+    title:"Agrega el AI Agent",
+    instruction:"Arrastra un nodo AI Agent. Será el orquestador que lee el JSON, consulta la plantilla y el catálogo, y genera contrato + BDD.",
+    hint:"📂 Categoría IA → AI Agent (borde morado)",
+    concept:"El agente razona qué herramientas llamar y sintetiza el contrato YAML junto con los escenarios BDD.",
+    configCode:`// System Prompt del AI Agent\nEres un generador de contratos de API.\nDado un JSON de flujo + contexto funcional:\n1. Lee la plantilla estándar (HTTP)\n2. Lee el catálogo de códigos HTTP (HTTP)\n3. Genera con Code:\n   - contrato YAML (OpenAPI 3.0.3)\n   - 1 escenario BDD por respuesta HTTP\n     (negocio y técnico)\n\nModel: claude-sonnet-4-6\nTemperature: 0.1`,
+    validate:(nodes) => nodes.some(n => n.type === "agent"),
+  },
+  {
+    id:"c-connect-trigger-agent", step:3,
+    title:"Conecta Trigger → AI Agent",
+    instruction:"Haz clic en el puerto ● derecho del Trigger Manual y luego en el ● izquierdo del AI Agent.",
+    hint:"Los puertos son los círculos en los laterales. Esc cancela la conexión.",
+    concept:"El JSON del flujo viaja del trigger al agente como contexto inicial del razonamiento.",
+    validate:(nodes, edges) => {
+      const t = nodes.find(n => n.type === "trigger-manual");
+      const a = nodes.find(n => n.type === "agent");
+      return !!(t && a && edges.some(e => e.from === t.id && e.to === a.id));
+    },
+  },
+  {
+    id:"c-add-http1", step:4,
+    title:"HTTP — Plantilla de contrato",
+    instruction:"Arrastra un nodo HTTP Request. Consultará el repo con la plantilla estándar OpenAPI (YAML) del contrato.",
+    hint:"📂 Categoría Herramienta → HTTP Request (borde azul claro)",
+    concept:"La plantilla define cómo mapear la entidad del JSON a un schema y un path por actividad. Sin ella el YAML sería arbitrario.",
+    configCode:`// HTTP — Plantilla estándar de contrato\nGET https://repo/templates/\n  contract-openapi-3.0.yaml\n\n// Devuelve el esqueleto YAML:\n// info, paths, components.schemas\n// + reglas de nombramiento de paths`,
+    validate:(nodes) => nodes.filter(n => n.type === "http").length >= 1,
+  },
+  {
+    id:"c-connect-agent-http1", step:5,
+    title:"Conecta AI Agent → HTTP (Plantilla)",
+    instruction:"Conecta la salida del AI Agent al primer HTTP (plantilla de contrato).",
+    hint:"Puerto ● derecho del AI Agent → ● izquierdo del HTTP.",
+    concept:"El agente llama este HTTP para obtener el formato estándar del contrato.",
+    validate:(nodes, edges) => {
+      const a = nodes.find(n => n.type === "agent");
+      const hs = nodes.filter(n => n.type === "http");
+      return !!(a && hs.length >= 1 && edges.some(e => e.from === a.id && hs.some(h => h.id === e.to)));
+    },
+  },
+  {
+    id:"c-add-http2", step:6,
+    title:"HTTP — Catálogo de códigos HTTP",
+    instruction:"Arrastra un segundo HTTP Request. Consultará el catálogo institucional de códigos HTTP por escenario de negocio y técnico.",
+    hint:"Puedes tener varios nodos del mismo tipo — arrastra otro HTTP Request.",
+    concept:"El catálogo asegura que cada contrato use los mismos códigos: 201/409/422 (negocio), 400/500/503 (técnico).",
+    configCode:`// HTTP — Catálogo de códigos HTTP\nGET https://repo/standards/\n  http-status-by-scenario.json\n\n// negocio:  201, 409, 422, 403\n// tecnico:  400, 500, 503\n// + cuándo aplicar cada uno`,
+    validate:(nodes) => nodes.filter(n => n.type === "http").length >= 2,
+  },
+  {
+    id:"c-connect-agent-http2", step:7,
+    title:"Conecta AI Agent → HTTP (Catálogo)",
+    instruction:"Conecta el AI Agent al segundo HTTP Request (catálogo de códigos).",
+    hint:"El agente puede tener múltiples salidas — llamará las herramientas en paralelo.",
+    concept:"Con el catálogo, el agente sabe qué respuesta HTTP corresponde a cada escenario del proceso.",
+    validate:(nodes, edges) => {
+      const a = nodes.find(n => n.type === "agent");
+      const hs = nodes.filter(n => n.type === "http");
+      return !!(a && hs.length >= 2 && edges.filter(e => e.from === a.id && hs.some(h => h.id === e.to)).length >= 2);
+    },
+  },
+  {
+    id:"c-add-code", step:8,
+    title:"Code — Generador YAML + BDD",
+    instruction:"Arrastra un nodo Code. Ejecutará la generación: arma el contrato YAML y deriva un escenario BDD por cada respuesta HTTP.",
+    hint:"📂 Categoría Herramienta → Code (borde cian)",
+    concept:"El Code node materializa los artefactos: toma plantilla + catálogo + entidad y produce el YAML y el .feature (Gherkin).",
+    configCode:`// Code — genera contrato + pruebas\nfor (const resp of httpResponses) {\n  contrato.paths[path].responses[resp.code]\n    = { description: resp.desc }\n  bdd.push(scenarioFor(resp))\n}\n// salida: contrato.yaml + contrato.feature`,
+    validate:(nodes) => nodes.some(n => n.type === "code"),
+  },
+  {
+    id:"c-connect-agent-code", step:9,
+    title:"Conecta AI Agent → Code",
+    instruction:"Conecta el AI Agent al nodo Code (generador). El agente ya tiene plantilla, catálogo y generador conectados.",
+    hint:"Puerto ● derecho del AI Agent → ● izquierdo del Code.",
+    concept:"El agente delega la materialización en el Code node, que corre la lógica real de generación.",
+    validate:(nodes, edges) => {
+      const a = nodes.find(n => n.type === "agent");
+      const c = nodes.find(n => n.type === "code");
+      return !!(a && c && edges.some(e => e.from === a.id && e.to === c.id));
+    },
+  },
+  {
+    id:"c-connect-tools-back", step:10,
+    title:"Conecta las 3 herramientas → AI Agent",
+    instruction:"Conecta la salida de cada herramienta (2 HTTP + Code) de vuelta al AI Agent. Los resultados deben volver al agente.",
+    hint:"Puerto ● derecho de cada herramienta → ● izquierdo del AI Agent. Repite para las 3.",
+    concept:"El ciclo Agent→herramienta→resultado→Agent es el corazón del agente. Sin feedback, el LLM no recibe la plantilla ni el catálogo reales.",
+    validate:(nodes, edges) => {
+      const a = nodes.find(n => n.type === "agent");
+      const tools = nodes.filter(n => n.type === "http" || n.type === "code");
+      return !!(a && tools.length >= 3 && edges.filter(e => e.to === a.id && tools.some(t => t.id === e.from)).length >= 3);
+    },
+  },
+  {
+    id:"c-add-respond", step:11,
+    title:"Agrega el nodo Responder",
+    instruction:"Arrastra un nodo Responder. Entregará los dos artefactos: el contrato YAML y la batería de escenarios BDD.",
+    hint:"📂 Categoría Salida → Responder (borde verde)",
+    concept:"El Responder cierra el ciclo entregando contrato + pruebas consistentes entre sí.",
+    configCode:`// Output del Responder\n{\n  "artefactos": ["contrato.yaml",\n     "contrato.feature"],\n  "escenarios_bdd": 5,\n  "codigos_http": [201,400,409,422,500]\n}`,
+    validate:(nodes) => nodes.some(n => n.type === "respond"),
+  },
+  {
+    id:"c-connect-agent-respond", step:12,
+    title:"Conecta AI Agent → Responder",
+    instruction:"Conecta la salida del AI Agent al nodo Responder. ¡Último paso del laboratorio!",
+    hint:"Puerto ● derecho del AI Agent → ● izquierdo del Responder.",
+    concept:"¡Agente completo! Desde un JSON de flujo, el agente genera un contrato YAML estandarizado y sus escenarios BDD con códigos HTTP.",
+    validate:(nodes, edges) => {
+      const a = nodes.find(n => n.type === "agent");
+      const r = nodes.find(n => n.type === "respond");
+      return !!(a && r && edges.some(e => e.from === a.id && e.to === r.id));
+    },
+  },
+];
+
+// ─── Lab configs registry ─────────────────────────────────────────────────────
+const LAB_CONFIGS: Record<string, {
+  templateId: string; eyebrow: string; title: string; context: string;
+  labSteps: typeof BIAN_LAB_STEPS; guidedSteps: GuidedStep[]; mockOutputs: Record<string,string>;
+  tabLabel: string; subtitle: string; doneTitle: string; doneDesc: string; doneList: string[];
+  runLabel: string; keyConcept: React.ReactNode; ctaLabel: string;
+}> = {
+  bian: {
+    templateId: "bian",
+    eyebrow: "LABORATORIO BIAN",
+    title: "Nombramiento de Productos Bancarios",
+    context: "Dado un producto bancario en lenguaje natural, el agente consulta tres repositorios en Azure DevOps: (1) guía institucional, (2) catálogo BIAN Service Domains, y (3) Excel de subdominios. Luego genera el nombre estándar, la API REST y las operaciones bajo BIAN v12.",
+    labSteps: BIAN_LAB_STEPS, guidedSteps: BIAN_GUIDED_STEPS, mockOutputs: BIAN_MOCK_OUTPUTS,
+    tabLabel: "🏦 Lab BIAN", subtitle: "Construye el agente BIAN paso a paso",
+    doneTitle: "¡Agente BIAN Completo!",
+    doneDesc: "Has construido el agente de nombramiento BIAN desde cero. 12 pasos completados correctamente.",
+    doneList: ["✓ Trigger Manual → contexto del producto","✓ AI Agent orquestador con LLM","✓ 3 HTTP hacia repos Azure (guía + BIAN + subdominios)","✓ Feedback loop HTTP → Agent","✓ Responder con nombramiento validado"],
+    runLabel: "▶ Ejecutar simulación BIAN",
+    ctaLabel: "🔨 Construir desde cero (modo guiado)",
+    keyConcept: <>El AI Agent actúa como orquestador: consulta los 3 repos en paralelo, recibe sus respuestas, y sintetiza la información usando el LLM. Sin las herramientas HTTP, el LLM inventaría nombres BIAN plausibles pero incorrectos — esto se llama <strong style={{ color:"#a5b4fc" }}>alucinación</strong>.</>,
+  },
+  contract: {
+    templateId: "contract",
+    eyebrow: "LABORATORIO · GENERADOR DE CONTRATOS",
+    title: "De JSON de flujo a contrato YAML + BDD",
+    context: "Dado un JSON con el flujo de proceso y el contexto funcional, el agente consulta la plantilla estándar de contrato (OpenAPI YAML) y el catálogo de códigos HTTP, y con un Code node genera el contrato YAML y los escenarios BDD (uno por respuesta HTTP, de negocio y técnicos).",
+    labSteps: CONTRACT_LAB_STEPS, guidedSteps: CONTRACT_GUIDED_STEPS, mockOutputs: CONTRACT_MOCK_OUTPUTS,
+    tabLabel: "📄 Lab Contratos", subtitle: "Construye el generador de contratos paso a paso",
+    doneTitle: "¡Generador de Contratos Completo!",
+    doneDesc: "Has construido el agente que convierte un JSON de flujo en un contrato YAML estandarizado y su batería de pruebas BDD. 12 pasos completados.",
+    doneList: ["✓ Trigger Manual → JSON de flujo + contexto","✓ AI Agent orquestador con LLM","✓ HTTP plantilla de contrato + HTTP catálogo HTTP","✓ Code node generador (YAML + BDD)","✓ Feedback loop herramientas → Agent","✓ Responder con contrato + escenarios BDD"],
+    runLabel: "▶ Ejecutar simulación del generador",
+    ctaLabel: "🔨 Construir desde cero (modo guiado)",
+    keyConcept: <>Un mismo JSON neutro produce <strong style={{ color:"#6ee7b7" }}>contrato y pruebas consistentes entre sí</strong>: el contrato YAML y los escenarios BDD salen de la misma fuente de verdad. Las herramientas HTTP aportan el estándar; el Code node materializa los artefactos. Diseño, desarrollo y QA parten de lo mismo.</>,
+  },
+};
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 interface ValidationResult { score:number; valid:boolean; errors:string[]; warnings:string[]; tips:string[] }
@@ -6338,6 +6540,7 @@ function SimulationPanel({ steps, nodes, simulating, done }: { steps:SimStep[]; 
 
 // ─── LabGuidePanel ────────────────────────────────────────────────────────────
 function LabGuidePanel({
+  cfg,
   activeSimStep,
   labMode,
   labCurrentStep,
@@ -6347,6 +6550,7 @@ function LabGuidePanel({
   onExitLab,
   onRunSim,
 }: {
+  cfg: any;
   activeSimStep: string | null;
   labMode: boolean;
   labCurrentStep: number;
@@ -6356,7 +6560,7 @@ function LabGuidePanel({
   onExitLab: () => void;
   onRunSim: () => void;
 }) {
-  const total = BIAN_GUIDED_STEPS.length;
+  const total = cfg.guidedSteps.length;
   const pct = labCompleted ? 100 : Math.round((labCurrentStep / total) * 100);
 
   if (!labMode) {
@@ -6364,19 +6568,19 @@ function LabGuidePanel({
     return (
       <div className="flex flex-col gap-4 p-5">
         <div>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.58rem", letterSpacing:"0.1em", color:"#f59e0b", marginBottom:4 }}>LABORATORIO BIAN</div>
-          <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:"0.88rem", color:"rgba(255,255,255,0.9)", lineHeight:1.35 }}>Nombramiento de Productos Bancarios</div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.58rem", letterSpacing:"0.1em", color:"#f59e0b", marginBottom:4 }}>{cfg.eyebrow}</div>
+          <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:"0.88rem", color:"rgba(255,255,255,0.9)", lineHeight:1.35 }}>{cfg.title}</div>
         </div>
         <div className="rounded-xl p-3" style={{ background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.2)" }}>
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.56rem", color:"#f59e0b", letterSpacing:"0.08em", marginBottom:6 }}>CONTEXTO</div>
           <p style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.72rem", color:"rgba(255,255,255,0.65)", lineHeight:1.65, margin:0 }}>
-            Dado un producto bancario en lenguaje natural, el agente consulta tres repositorios en Azure DevOps: (1) guía institucional, (2) catálogo BIAN Service Domains, y (3) Excel de subdominios. Luego genera el nombre estándar, la API REST y las operaciones bajo BIAN v12.
+            {cfg.context}
           </p>
         </div>
         <div>
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.58rem", letterSpacing:"0.08em", color:"rgba(255,255,255,0.3)", marginBottom:8 }}>PASOS DEL FLUJO (plantilla cargada)</div>
           <div className="flex flex-col gap-2">
-            {BIAN_LAB_STEPS.map((step) => {
+            {cfg.labSteps.map((step) => {
               const isActive = activeSimStep === step.nodeId;
               return (
                 <motion.div key={step.nodeId} animate={{ background: isActive ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.03)" }} transition={{ duration:0.25 }} className="rounded-xl p-3" style={{ border: isActive ? "1px solid rgba(245,158,11,0.35)" : "1px solid rgba(255,255,255,0.06)" }}>
@@ -6396,12 +6600,12 @@ function LabGuidePanel({
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl transition-all"
           style={{ background:"linear-gradient(135deg,rgba(245,158,11,0.18),rgba(251,191,36,0.1))", border:"1.5px solid rgba(245,158,11,0.4)", color:"#fbbf24", fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:"0.8rem", cursor:"pointer", boxShadow:"0 0 16px rgba(245,158,11,0.12)" }}
         >
-          🔨 Construir desde cero (modo guiado)
+          {cfg.ctaLabel}
         </button>
         <div className="rounded-xl p-3" style={{ background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.2)" }}>
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.56rem", color:"#a5b4fc", marginBottom:6, letterSpacing:"0.08em" }}>💡 CONCEPTO CLAVE</div>
           <p style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.7rem", color:"rgba(255,255,255,0.6)", lineHeight:1.65, margin:0 }}>
-            El AI Agent actúa como orquestador: consulta los 3 repos en paralelo, recibe sus respuestas, y sintetiza la información usando el LLM. Sin las herramientas HTTP, el LLM inventaría nombres BIAN plausibles pero incorrectos — esto se llama <strong style={{ color:"#a5b4fc" }}>alucinación</strong>.
+            {cfg.keyConcept}
           </p>
         </div>
       </div>
@@ -6426,7 +6630,7 @@ function LabGuidePanel({
             {labCompleted ? "✓ Completo" : `${labCurrentStep}/${total}`}
           </span>
         </div>
-        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.65rem", color:"rgba(255,255,255,0.3)", margin:0 }}>Construye el agente BIAN paso a paso</p>
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.65rem", color:"rgba(255,255,255,0.3)", margin:0 }}>{cfg.subtitle}</p>
       </div>
 
       {/* Steps list */}
@@ -6436,15 +6640,15 @@ function LabGuidePanel({
           <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} className="flex flex-col gap-3">
             <div className="rounded-xl p-4 text-center" style={{ background:"rgba(34,197,94,0.1)", border:"1px solid rgba(34,197,94,0.3)" }}>
               <div style={{ fontSize:32, marginBottom:8 }}>🎉</div>
-              <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:800, fontSize:"0.95rem", color:"#4ade80", marginBottom:4 }}>¡Agente BIAN Completo!</div>
+              <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:800, fontSize:"0.95rem", color:"#4ade80", marginBottom:4 }}>{cfg.doneTitle}</div>
               <p style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.72rem", color:"rgba(255,255,255,0.55)", lineHeight:1.6, margin:0 }}>
-                Has construido el agente de nombramiento BIAN desde cero. 12 pasos completados correctamente.
+                {cfg.doneDesc}
               </p>
             </div>
             <div className="rounded-xl p-3" style={{ background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.2)" }}>
               <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.56rem", color:"#f59e0b", letterSpacing:"0.08em", marginBottom:6 }}>¿QUÉ CONSTRUISTE?</div>
               <div className="flex flex-col gap-1.5">
-                {["✓ Trigger Manual → contexto del producto","✓ AI Agent orquestador con LLM","✓ 3 HTTP hacia repos Azure (guía + BIAN + subdominios)","✓ Feedback loop HTTP → Agent","✓ Responder con nombramiento validado"].map((t,i) => (
+                {cfg.doneList.map((t,i) => (
                   <div key={i} style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.68rem", color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>{t}</div>
                 ))}
               </div>
@@ -6454,7 +6658,7 @@ function LabGuidePanel({
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl"
               style={{ background:"rgba(34,197,94,0.18)", border:"1.5px solid rgba(34,197,94,0.4)", color:"#4ade80", fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:"0.82rem", cursor:"pointer", boxShadow:"0 0 16px rgba(34,197,94,0.15)" }}
             >
-              ▶ Ejecutar simulación BIAN
+              {cfg.runLabel}
             </button>
             <button onClick={onExitLab} style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.7rem", color:"rgba(255,255,255,0.25)", background:"none", border:"none", cursor:"pointer", textAlign:"center" }}>
               Ver plantilla completa
@@ -6462,7 +6666,8 @@ function LabGuidePanel({
           </motion.div>
         ) : (
           // ── Step-by-step ──────────────────────────────────────────────────
-          BIAN_GUIDED_STEPS.map((step, i) => {
+          cfg.guidedSteps.map((step, i) => {
+            void 0;
             const isDone    = i < labCurrentStep;
             const isCurrent = i === labCurrentStep;
             const isSuccess = isCurrent && labStepFeedback === "success";
@@ -6556,15 +6761,21 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
   const [rightPanel, setRightPanel]   = useState<"node"|"validation"|"simulation"|"lab">("validation");
   const [template, setTemplate]       = useState("blank");
   // ── Guided lab state ──────────────────────────────────────────────────────
+  const [labKind, setLabKind]               = useState<"bian"|"contract">("bian");
   const [labMode, setLabMode]               = useState(false);
   const [labCurrentStep, setLabCurrentStep] = useState(0);
   const [labStepFeedback, setLabStepFeedback] = useState<"success"|null>(null);
-  const labCompleted = labCurrentStep >= BIAN_GUIDED_STEPS.length;
+  const activeCfg = LAB_CONFIGS[labKind];
+  const guidedSteps = activeCfg.guidedSteps;
+  const labCompleted = labCurrentStep >= guidedSteps.length;
   const dragDelta                     = useRef({ d:0 });
   const canvasRef                     = useRef<HTMLDivElement>(null);
   const stepTimeoutRef                = useRef<ReturnType<typeof setTimeout>|null>(null);
 
   const isBian = template === "bian";
+  const isContract = template === "contract";
+  const isLabTemplate = isBian || isContract;
+  const panelCfg = LAB_CONFIGS[isContract ? "contract" : "bian"];
   const activeSimNodeId = simSteps.length > 0 ? simSteps[simSteps.length-1]?.nodeId : null;
 
   const getCanvasPos = useCallback((e: React.MouseEvent|MouseEvent) => {
@@ -6577,7 +6788,9 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
     setNodes(tmpl.nodes.map(n => ({ ...n }))); setEdges(tmpl.edges.map(e => ({ ...e })));
     setSelectedId(null); setConnectFrom(null); setValidation(null);
     setSimSteps([]); setSimDone(false); setTemplate(id);
-    if (id === "bian") setRightPanel("lab"); else setRightPanel("validation");
+    if (id === "bian") { setLabKind("bian"); setRightPanel("lab"); }
+    else if (id === "contract") { setLabKind("contract"); setRightPanel("lab"); }
+    else setRightPanel("validation");
   }
 
   function addNode(type:string, x:number, y:number) {
@@ -6647,8 +6860,8 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
   // ── Guided lab: auto-validate current step on every canvas change ──────────
   useEffect(() => {
     if (!labMode || labStepFeedback === "success") return;
-    if (labCurrentStep >= BIAN_GUIDED_STEPS.length) return;
-    const step = BIAN_GUIDED_STEPS[labCurrentStep];
+    if (labCurrentStep >= guidedSteps.length) return;
+    const step = guidedSteps[labCurrentStep];
     if (!step) return;
     if (step.validate(nodes, edges)) {
       setLabStepFeedback("success");
@@ -6660,12 +6873,13 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
         setLabStepFeedback(null);
       }, 1300);
     }
-  }, [nodes, edges, labMode, labCurrentStep, labStepFeedback]);
+  }, [nodes, edges, labMode, labCurrentStep, labStepFeedback, guidedSteps]);
 
-  function startGuidedLab() {
+  function startGuidedLab(kind:"bian"|"contract" = "bian") {
     setNodes([]); setEdges([]); setSelectedId(null); setConnectFrom(null);
     setValidation(null); setSimSteps([]); setSimDone(false);
-    setTemplate("bian");
+    setLabKind(kind);
+    setTemplate(kind);
     setLabMode(true);
     setLabCurrentStep(0);
     setLabStepFeedback(null);
@@ -6676,7 +6890,7 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
     setLabMode(false);
     setLabCurrentStep(0);
     setLabStepFeedback(null);
-    loadTemplate("bian");
+    loadTemplate(labKind);
   }
 
   function runValidation() { const r = validate(nodes, edges); setValidation(r); setRightPanel("validation"); }
@@ -6694,6 +6908,7 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
       setSimSteps(p => [...p, { nodeId:nid, status:"running" }]);
       await sleep(600 + Math.random()*600);
       const mockOut = (isBian && BIAN_MOCK_OUTPUTS[nid]) ? BIAN_MOCK_OUTPUTS[nid]
+        : (isContract && CONTRACT_MOCK_OUTPUTS[nid]) ? CONTRACT_MOCK_OUTPUTS[nid]
         : (template === "asistente" && BANKING_ASISTENTE_OUTPUTS[nid]) ? BANKING_ASISTENTE_OUTPUTS[nid]
         : NODE_DEFS[node.type]?.mockOutput ?? "";
       setSimSteps(p => p.map(s => s.nodeId===nid ? { ...s, status:"success", output:mockOut } : s));
@@ -6718,7 +6933,7 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
     { id:"node",       label:"Nodo",      show: !!selNode },
     { id:"validation", label:"Validar"    },
     { id:"simulation", label:"Simular"    },
-    { id:"lab",        label:"🏦 Lab BIAN", show: isBian },
+    { id:"lab",        label:panelCfg.tabLabel, show: isLabTemplate },
   ];
 
   return (
@@ -6745,15 +6960,22 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
           <div className="flex items-center gap-2 flex-wrap justify-end">
             {/* Guided lab button — replaces blank template */}
             <button
-              onClick={startGuidedLab}
+              onClick={() => startGuidedLab("bian")}
               className="flex items-center gap-2 px-3 py-2 rounded-xl"
-              style={{ background: labMode ? "rgba(245,158,11,0.2)" : "rgba(99,102,241,0.12)", border: labMode ? "1.5px solid rgba(245,158,11,0.5)" : "1.5px solid rgba(99,102,241,0.3)", color: labMode ? "#fbbf24" : "#a5b4fc", fontFamily:"'Inter',sans-serif", fontWeight:600, fontSize:"0.72rem", cursor:"pointer", whiteSpace:"nowrap" }}
+              style={{ background: labMode && labKind==="bian" ? "rgba(245,158,11,0.2)" : "rgba(99,102,241,0.12)", border: labMode && labKind==="bian" ? "1.5px solid rgba(245,158,11,0.5)" : "1.5px solid rgba(99,102,241,0.3)", color: labMode && labKind==="bian" ? "#fbbf24" : "#a5b4fc", fontFamily:"'Inter',sans-serif", fontWeight:600, fontSize:"0.72rem", cursor:"pointer", whiteSpace:"nowrap" }}
             >
               🏦 Lab Guiado BIAN
             </button>
+            <button
+              onClick={() => startGuidedLab("contract")}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl"
+              style={{ background: labMode && labKind==="contract" ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.1)", border: labMode && labKind==="contract" ? "1.5px solid rgba(16,185,129,0.55)" : "1.5px solid rgba(16,185,129,0.3)", color: "#6ee7b7", fontFamily:"'Inter',sans-serif", fontWeight:600, fontSize:"0.72rem", cursor:"pointer", whiteSpace:"nowrap" }}
+            >
+              📄 Lab Guiado Contratos
+            </button>
             {/* Example templates (non-blank) */}
             <span style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.65rem", color:"rgba(255,255,255,0.2)" }}>|</span>
-            {Object.entries(TEMPLATES).filter(([id]) => id !== "blank" && id !== "bian").map(([id, t]) => (
+            {Object.entries(TEMPLATES).filter(([id]) => id !== "blank" && id !== "bian" && id !== "contract").map(([id, t]) => (
               <button key={id} onClick={() => loadTemplate(id)} style={{ padding:"4px 10px", borderRadius:7, background:template===id?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.04)", border:template===id?"1px solid rgba(99,102,241,0.4)":"1px solid rgba(255,255,255,0.07)", color:template===id?"#a5b4fc":"rgba(255,255,255,0.35)", fontFamily:"'Inter',sans-serif", fontSize:"0.68rem", cursor:"pointer", whiteSpace:"nowrap" }}>
                 {t.name}
               </button>
@@ -6861,7 +7083,7 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
 
               {/* Lab mode: step banner at top of canvas */}
               {labMode && !labCompleted && !connectFrom && (() => {
-                const step = BIAN_GUIDED_STEPS[labCurrentStep];
+                const step = guidedSteps[labCurrentStep];
                 if (!step) return null;
                 return (
                   <motion.div
@@ -6877,7 +7099,7 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
                     )}
                     <div>
                       <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.56rem", color:labStepFeedback==="success"?"#4ade80":"#f59e0b", letterSpacing:"0.08em", marginBottom:2 }}>
-                        {labStepFeedback==="success" ? "¡CORRECTO!" : `PASO ${step.step}/${BIAN_GUIDED_STEPS.length}`}
+                        {labStepFeedback==="success" ? "¡CORRECTO!" : `PASO ${step.step}/${guidedSteps.length}`}
                       </div>
                       <div style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.72rem", color:"rgba(255,255,255,0.8)", fontWeight:600 }}>
                         {labStepFeedback==="success" ? "Avanzando al siguiente paso…" : step.title}
@@ -6922,12 +7144,13 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
                 ) : rightPanel === "lab" ? (
                   <motion.div key="lab" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="h-full">
                     <LabGuidePanel
+                      cfg={panelCfg}
                       activeSimStep={activeSimNodeId}
                       labMode={labMode}
                       labCurrentStep={labCurrentStep}
                       labStepFeedback={labStepFeedback}
                       labCompleted={labCompleted}
-                      onStartLab={startGuidedLab}
+                      onStartLab={() => startGuidedLab(isContract ? "contract" : "bian")}
                       onExitLab={exitGuidedLab}
                       onRunSim={runSimulation}
                     />
@@ -6956,7 +7179,7 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
               <motion.div initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }} className="flex items-center gap-1.5 px-3 py-1 rounded-lg" style={{ background:labStepFeedback==="success"?"rgba(34,197,94,0.1)":"rgba(245,158,11,0.1)", border:`1px solid ${labStepFeedback==="success"?"rgba(34,197,94,0.35)":"rgba(245,158,11,0.3)"}` }}>
                 <motion.div animate={{ scale:[1,1.3,1] }} transition={{ duration:1, repeat:Infinity }} style={{ width:5, height:5, borderRadius:"50%", background:labStepFeedback==="success"?"#22c55e":"#f59e0b" }} />
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.6rem", color:labStepFeedback==="success"?"#4ade80":"#fbbf24" }}>
-                  {labStepFeedback==="success" ? "✓ Correcto" : `Lab paso ${labCurrentStep+1}/${BIAN_GUIDED_STEPS.length}`}
+                  {labStepFeedback==="success" ? "✓ Correcto" : `Lab paso ${labCurrentStep+1}/${guidedSteps.length}`}
                 </span>
               </motion.div>
             )}
@@ -9330,6 +9553,395 @@ function SDDSection() {
 }
 
 
+// ===== ContractGeneratorLab =====
+
+const CONTRACT_EXAMPLES = [
+  {
+    id: "credito",
+    name: "Crédito de consumo",
+    icon: <CreditCard size={15} />,
+    proceso: "originacion-credito-consumo",
+    dominio: "Originación de Crédito",
+    input: `{
+  "proceso": "originacion-credito-consumo",
+  "contextoFuncional": {
+    "dominio": "Originación de Crédito",
+    "capacidad": "Formalización de Contrato",
+    "actor": "Asesor Comercial",
+    "objetivoNegocio": "Formalizar un crédito de consumo
+       validando la capacidad de pago del cliente"
+  },
+  "flujoProceso": [
+    { "paso": 1, "actividad": "validarCliente",        "tipo": "validacion" },
+    { "paso": 2, "actividad": "evaluarCapacidadPago",  "tipo": "decision"   },
+    { "paso": 3, "actividad": "generarContrato",       "tipo": "creacion"   },
+    { "paso": 4, "actividad": "firmarConOTP",          "tipo": "confirmacion" }
+  ],
+  "entidad": {
+    "nombre": "ContratoCredito",
+    "campos": {
+      "clienteId":  "string",
+      "monto":      "number",
+      "plazoMeses": "integer",
+      "tasaEA":     "number"
+    },
+    "reglas": [
+      "monto entre 1.000.000 y 80.000.000",
+      "plazoMeses entre 6 y 72",
+      "cuota mensual <= 30% del ingreso"
+    ]
+  }
+}`,
+    yaml: `openapi: 3.0.3
+info:
+  title: Contrato · Originación Crédito de Consumo
+  version: 1.0.0
+  x-proceso: originacion-credito-consumo
+  x-dominio: Originación de Crédito
+
+paths:
+  /contratos-credito:
+    post:
+      operationId: generarContrato
+      summary: Formaliza un crédito de consumo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContratoCreditoRequest'
+      responses:
+        '201': { description: Contrato formalizado }
+        '400': { description: Datos del contrato inválidos }
+        '409': { description: Cliente ya tiene un crédito activo }
+        '422': { description: Capacidad de pago insuficiente }
+        '500': { description: Error del core de cartera }
+
+components:
+  schemas:
+    ContratoCreditoRequest:
+      type: object
+      required: [clienteId, monto, plazoMeses, tasaEA]
+      properties:
+        clienteId:  { type: string,  example: "CC-1032456789" }
+        monto:      { type: number,  minimum: 1000000, maximum: 80000000 }
+        plazoMeses: { type: integer, minimum: 6, maximum: 72 }
+        tasaEA:     { type: number,  format: float }`,
+    scenarios: [
+      { tipo: "negocio", code: 201, titulo: "Contrato formalizado (camino feliz)",
+        given: ["un cliente válido con capacidad de pago suficiente", "un monto de 5.000.000 a 24 meses"],
+        when: "solicita la formalización del contrato",
+        then: ["el sistema responde 201 Created", "retorna el contratoId y el plan de pagos"] },
+      { tipo: "negocio", code: 422, titulo: "Capacidad de pago insuficiente",
+        given: ["un cliente cuya cuota supera el 30% de su ingreso mensual"],
+        when: "solicita la formalización del contrato",
+        then: ["el sistema responde 422 Unprocessable Entity", 'entrega el motivo "capacidad_insuficiente"'] },
+      { tipo: "negocio", code: 409, titulo: "Cliente con crédito activo",
+        given: ["un cliente con un crédito de consumo vigente"],
+        when: "solicita un nuevo contrato",
+        then: ["el sistema responde 409 Conflict"] },
+      { tipo: "tecnico", code: 400, titulo: "Payload fuera de rango",
+        given: ["un monto por fuera del rango permitido"],
+        when: "envía la solicitud al endpoint",
+        then: ["el sistema responde 400 Bad Request", "lista los campos que fallaron la validación"] },
+      { tipo: "tecnico", code: 500, titulo: "Falla del core bancario",
+        given: ["el core de cartera no responde"],
+        when: "el sistema intenta persistir el contrato",
+        then: ["responde 500 Internal Server Error", "registra el evento para reintento"] },
+    ],
+  },
+  {
+    id: "cuenta",
+    name: "Apertura de cuenta",
+    icon: <Database size={15} />,
+    proceso: "apertura-cuenta-ahorros",
+    dominio: "Vinculación de Productos",
+    input: `{
+  "proceso": "apertura-cuenta-ahorros",
+  "contextoFuncional": {
+    "dominio": "Vinculación de Productos",
+    "capacidad": "Apertura de Cuenta",
+    "actor": "Cliente Digital (self-service)",
+    "objetivoNegocio": "Abrir una cuenta de ahorros 100% digital
+       con validación de identidad y listas restrictivas"
+  },
+  "flujoProceso": [
+    { "paso": 1, "actividad": "validarIdentidad",          "tipo": "validacion" },
+    { "paso": 2, "actividad": "verificarListasRestrictivas","tipo": "decision"  },
+    { "paso": 3, "actividad": "crearCuenta",               "tipo": "creacion"   }
+  ],
+  "entidad": {
+    "nombre": "CuentaAhorros",
+    "campos": {
+      "documento":     "string",
+      "tipoDocumento": "string",
+      "email":         "string",
+      "celular":       "string"
+    },
+    "reglas": [
+      "documento único y mayor de edad",
+      "no presente en listas restrictivas (OFAC/ONU)",
+      "celular con formato nacional válido"
+    ]
+  }
+}`,
+    yaml: `openapi: 3.0.3
+info:
+  title: Contrato · Apertura Cuenta de Ahorros
+  version: 1.0.0
+  x-proceso: apertura-cuenta-ahorros
+  x-dominio: Vinculación de Productos
+
+paths:
+  /cuentas-ahorros:
+    post:
+      operationId: crearCuenta
+      summary: Abre una cuenta de ahorros digital
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CuentaAhorrosRequest'
+      responses:
+        '201': { description: Cuenta creada }
+        '400': { description: Datos de apertura inválidos }
+        '403': { description: Cliente en lista restrictiva }
+        '409': { description: Ya existe una cuenta para el documento }
+        '503': { description: Validador de identidad no disponible }
+
+components:
+  schemas:
+    CuentaAhorrosRequest:
+      type: object
+      required: [documento, tipoDocumento, email, celular]
+      properties:
+        documento:     { type: string }
+        tipoDocumento: { type: string, enum: [CC, CE, PA] }
+        email:         { type: string, format: email }
+        celular:       { type: string, pattern: nacional }`,
+    scenarios: [
+      { tipo: "negocio", code: 201, titulo: "Cuenta creada (camino feliz)",
+        given: ["un cliente mayor de edad con identidad validada", "que no figura en listas restrictivas"],
+        when: "solicita la apertura de la cuenta",
+        then: ["el sistema responde 201 Created", "entrega el número de cuenta enmascarado"] },
+      { tipo: "negocio", code: 403, titulo: "Cliente en lista restrictiva",
+        given: ["un documento presente en listas OFAC/ONU"],
+        when: "solicita la apertura",
+        then: ["el sistema responde 403 Forbidden", "marca el caso para revisión de cumplimiento"] },
+      { tipo: "negocio", code: 409, titulo: "Documento ya vinculado",
+        given: ["un documento que ya tiene una cuenta de ahorros"],
+        when: "solicita una nueva apertura",
+        then: ["el sistema responde 409 Conflict"] },
+      { tipo: "tecnico", code: 400, titulo: "Celular con formato inválido",
+        given: ["un celular que no cumple el patrón nacional"],
+        when: "envía la solicitud",
+        then: ["el sistema responde 400 Bad Request"] },
+      { tipo: "tecnico", code: 503, titulo: "Validador de identidad caído",
+        given: ["el servicio de biometría no responde"],
+        when: "el sistema intenta validar la identidad",
+        then: ["responde 503 Service Unavailable", "sugiere reintentar más tarde"] },
+    ],
+  },
+];
+
+const CONTRACT_PIPELINE = [
+  { label: "Lee el JSON del flujo de proceso", icon: <FileText size={14} />, detail: "Parsea proceso, flujo y entidades" },
+  { label: "Interpreta el contexto funcional", icon: <Brain size={14} />, detail: "Identifica dominio, actor y objetivo de negocio" },
+  { label: "Genera la plantilla YAML estandarizada", icon: <Code2 size={14} />, detail: "Mapea entidad → schema OpenAPI 3.0" },
+  { label: "Deriva escenarios BDD + códigos HTTP", icon: <ListChecks size={14} />, detail: "Un escenario de negocio y técnico por respuesta" },
+];
+
+function httpMeta(code) {
+  const n = Math.floor(code / 100);
+  if (n === 2) return { color: "#059669", bg: "#ecfdf5", border: "rgba(5,150,105,0.25)", label: "Éxito" };
+  if (n === 4) return { color: "#d97706", bg: "#fffbeb", border: "rgba(217,119,6,0.25)", label: "Error de cliente" };
+  if (n === 5) return { color: "#dc2626", bg: "#fef2f2", border: "rgba(220,38,38,0.25)", label: "Error de servidor" };
+  return { color: "#6b7280", bg: "#f3f4f6", border: "rgba(107,114,128,0.25)", label: "" };
+}
+const HTTP_NAME = { 201: "Created", 400: "Bad Request", 403: "Forbidden", 409: "Conflict", 422: "Unprocessable Entity", 500: "Internal Server Error", 503: "Service Unavailable" };
+
+function GherkinScenario({ s }) {
+  const m = httpMeta(s.code);
+  const isNeg = s.tipo === "negocio";
+  const Line = ({ kw, text, color }) => (
+    <div style={{ display: "flex", gap: 6, lineHeight: 1.5 }}>
+      <span style={{ color, fontWeight: 700, minWidth: 42, flexShrink: 0 }}>{kw}</span>
+      <span style={{ color: "#cbd5e1" }}>{text}</span>
+    </div>
+  );
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${m.border}`, background: "#0d0e1a" }}>
+      <div className="flex items-center gap-2 px-3 py-2 flex-wrap" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        <span className="rounded-md px-2 py-0.5" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", fontWeight: 700, color: m.color, background: m.bg, border: `1px solid ${m.border}` }}>{s.code} {HTTP_NAME[s.code]}</span>
+        <span className="rounded-md px-2 py-0.5" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem", letterSpacing: "0.04em", color: isNeg ? "#a5b4fc" : "#67e8f9", background: isNeg ? "rgba(99,102,241,0.12)" : "rgba(8,145,178,0.12)", border: `1px solid ${isNeg ? "rgba(99,102,241,0.25)" : "rgba(8,145,178,0.25)"}` }}>{isNeg ? "NEGOCIO" : "TÉCNICO"}</span>
+        <span style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.74rem", color: "#e2e8f0", fontWeight: 600 }}>{s.titulo}</span>
+      </div>
+      <div className="px-3 py-2.5" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68rem" }}>
+        {s.given.map((g, i) => <Line key={"g" + i} kw={i === 0 ? "Given" : "And"} text={g} color="#34d399" />)}
+        <Line kw="When" text={s.when} color="#fbbf24" />
+        {s.then.map((t, i) => <Line key={"t" + i} kw={i === 0 ? "Then" : "And"} text={t} color="#7dd3fc" />)}
+      </div>
+    </div>
+  );
+}
+
+function ContractGeneratorLab({ onClose }) {
+  const [exIdx, setExIdx] = useState(0);
+  const [stage, setStage] = useState(0);
+  const [running, setRunning] = useState(false);
+  const [tab, setTab] = useState("yaml");
+  const [bddFilter, setBddFilter] = useState("todos");
+  const [copied, setCopied] = useState(false);
+  const ex = CONTRACT_EXAMPLES[exIdx];
+  const done = stage >= CONTRACT_PIPELINE.length;
+
+  const run = useCallback(() => { setStage(0); setRunning(true); setTab("yaml"); }, []);
+  useEffect(() => { run(); }, [exIdx, run]);
+  useEffect(() => {
+    if (!running) return;
+    if (stage >= CONTRACT_PIPELINE.length) { setRunning(false); return; }
+    const t = setTimeout(() => setStage((s) => s + 1), 720);
+    return () => clearTimeout(t);
+  }, [running, stage]);
+
+  const yamlReady = stage >= 3;
+  const bddReady = stage >= 4;
+  const scenarios = ex.scenarios.filter((s) => bddFilter === "todos" || s.tipo === bddFilter);
+  const copyYaml = () => { navigator.clipboard?.writeText(ex.yaml).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {}); };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-stretch justify-stretch p-3" style={{ background: "rgba(0,0,0,0.9)", backdropFilter: "blur(16px)" }}>
+      <motion.div initial={{ opacity: 0, scale: 0.97, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 10 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col w-full rounded-2xl overflow-hidden" style={{ background: "#0d0e1a", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 40px 100px rgba(0,0,0,0.8)" }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", background: "#0e0f1c" }}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(16,185,129,0.18)", border: "1px solid rgba(16,185,129,0.35)" }}><FileText size={14} style={{ color: "#34d399" }} /></div>
+            <div>
+              <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.9rem", color: "rgba(255,255,255,0.92)" }}>Laboratorio · Generador de Contratos</div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem", color: "rgba(255,255,255,0.28)", marginTop: 1 }}>JSON de flujo → contrato YAML estandarizado → escenarios BDD con códigos HTTP</div>
+            </div>
+          </div>
+          <button onClick={onClose} className="flex items-center gap-2 px-4 py-2 rounded-xl" style={{ background: "rgba(239,68,68,0.18)", border: "1.5px solid rgba(239,68,68,0.45)", color: "#f87171", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}>
+            <X size={14} /> Cerrar
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5">
+          <div className="max-w-6xl mx-auto flex flex-col gap-5">
+
+            {/* Example selector + run */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem", letterSpacing: "0.08em", color: "rgba(255,255,255,0.35)" }}>ESCENARIO DE NEGOCIO:</span>
+              {CONTRACT_EXAMPLES.map((e, i) => (
+                <button key={e.id} onClick={() => setExIdx(i)} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5" style={{ background: i === exIdx ? "rgba(16,185,129,0.18)" : "rgba(255,255,255,0.04)", border: i === exIdx ? "1px solid rgba(16,185,129,0.4)" : "1px solid rgba(255,255,255,0.08)", color: i === exIdx ? "#6ee7b7" : "rgba(255,255,255,0.5)", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.76rem" }}>
+                  {e.icon} {e.name}
+                </button>
+              ))}
+              <button onClick={run} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 ml-auto" style={{ background: "linear-gradient(135deg,#10b981,#0891b2)", border: "none", color: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.76rem" }}>
+                {running ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />} {running ? "Generando…" : "Regenerar"}
+              </button>
+            </div>
+
+            {/* Pipeline */}
+            <div className="rounded-2xl p-4" style={{ background: "#0b0c18", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+                {CONTRACT_PIPELINE.map((p, i) => {
+                  const st = i < stage ? "done" : i === stage && running ? "active" : "idle";
+                  return (
+                    <div key={i} className="rounded-xl px-3 py-2.5 flex items-start gap-2.5" style={{ background: st === "idle" ? "rgba(255,255,255,0.02)" : "rgba(16,185,129,0.07)", border: `1px solid ${st === "active" ? "rgba(16,185,129,0.5)" : st === "done" ? "rgba(16,185,129,0.22)" : "rgba(255,255,255,0.06)"}`, transition: "all .3s" }}>
+                      <div className="rounded-lg flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26, background: st === "idle" ? "rgba(255,255,255,0.06)" : "#10b981", color: st === "idle" ? "rgba(255,255,255,0.3)" : "#fff" }}>
+                        {st === "done" ? <Check size={13} /> : st === "active" ? <Loader2 size={13} className="animate-spin" /> : p.icon}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.52rem", color: "rgba(255,255,255,0.3)" }}>PASO {i + 1}</div>
+                        <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.72rem", color: st === "idle" ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.92)", lineHeight: 1.3 }}>{p.label}</div>
+                        <div style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.62rem", color: "rgba(255,255,255,0.32)", marginTop: 2 }}>{p.detail}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Input + Output */}
+            <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,0.85fr) minmax(0,1.15fr)" }}>
+              {/* Input JSON */}
+              <div className="rounded-2xl overflow-hidden flex flex-col" style={{ border: "1px solid rgba(255,255,255,0.08)", minWidth: 0 }}>
+                <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "#11131f", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  <ArrowRight size={13} style={{ color: "#60a5fa" }} />
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: "#93c5fd" }}>entrada · flujo + contexto funcional</span>
+                  <span className="ml-auto rounded px-1.5 py-0.5" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.52rem", color: "rgba(255,255,255,0.35)", background: "rgba(255,255,255,0.05)" }}>JSON</span>
+                </div>
+                <pre style={{ margin: 0, padding: "14px 16px", background: "#0d0e1a", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.66rem", lineHeight: 1.65, color: "#cbd5e1", overflowX: "auto", flex: 1 }}>{ex.input}</pre>
+              </div>
+
+              {/* Output tabs */}
+              <div className="rounded-2xl overflow-hidden flex flex-col" style={{ border: "1px solid rgba(255,255,255,0.08)", minWidth: 0 }}>
+                <div className="flex items-center gap-1 px-3 py-2" style={{ background: "#11131f", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  {[{ id: "yaml", label: "Contrato YAML", icon: <Code2 size={12} /> }, { id: "bdd", label: "Escenarios BDD", icon: <ListChecks size={12} /> }].map((t) => (
+                    <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5" style={{ background: tab === t.id ? "rgba(16,185,129,0.16)" : "transparent", border: tab === t.id ? "1px solid rgba(16,185,129,0.35)" : "1px solid transparent", color: tab === t.id ? "#6ee7b7" : "rgba(255,255,255,0.45)", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.72rem" }}>
+                      {t.icon} {t.label}
+                    </button>
+                  ))}
+                  {tab === "yaml" && yamlReady && (
+                    <button onClick={copyYaml} className="flex items-center gap-1 ml-auto rounded-md px-2 py-1" style={{ background: "rgba(255,255,255,0.06)", border: "none", color: "#cbd5e1", cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem" }}>
+                      {copied ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ background: "#0d0e1a", flex: 1, minHeight: 280 }}>
+                  {tab === "yaml" ? (
+                    yamlReady ? (
+                      <motion.pre initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ margin: 0, padding: "14px 16px", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.66rem", lineHeight: 1.65, color: "#a7f3d0", overflowX: "auto" }}>{ex.yaml}</motion.pre>
+                    ) : <LabWaiting text="Generando la plantilla YAML…" />
+                  ) : (
+                    bddReady ? (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 flex flex-col gap-3">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {[{ id: "todos", label: "Todos" }, { id: "negocio", label: "Negocio" }, { id: "tecnico", label: "Técnico" }].map((f) => (
+                            <button key={f.id} onClick={() => setBddFilter(f.id)} className="rounded-md px-2.5 py-1" style={{ background: bddFilter === f.id ? "rgba(16,185,129,0.16)" : "rgba(255,255,255,0.04)", border: bddFilter === f.id ? "1px solid rgba(16,185,129,0.35)" : "1px solid rgba(255,255,255,0.07)", color: bddFilter === f.id ? "#6ee7b7" : "rgba(255,255,255,0.45)", cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem" }}>{f.label}</button>
+                          ))}
+                          <span className="ml-auto" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem", color: "rgba(255,255,255,0.3)" }}>{scenarios.length} escenarios · Gherkin</span>
+                        </div>
+                        {scenarios.map((s, i) => <GherkinScenario key={i} s={s} />)}
+                      </motion.div>
+                    ) : <LabWaiting text="Derivando escenarios BDD y códigos HTTP…" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Explainer */}
+            <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.18)" }}>
+              <Lightbulb size={16} style={{ color: "#34d399", flexShrink: 0, marginTop: 2 }} />
+              <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.78rem", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, margin: 0 }}>
+                El agente toma un <strong style={{ color: "#a7f3d0" }}>JSON neutro del flujo de proceso</strong> y su contexto funcional, y produce dos artefactos consistentes entre sí: un <strong style={{ color: "#a7f3d0" }}>contrato YAML estandarizado</strong> (OpenAPI) y la <strong style={{ color: "#a7f3d0" }}>batería de pruebas BDD</strong>. Cada respuesta HTTP del contrato genera su escenario — los <span style={{ color: "#a5b4fc" }}>de negocio</span> (201, 409, 422, 403) y los <span style={{ color: "#67e8f9" }}>técnicos</span> (400, 500, 503) — para que diseño, desarrollo y QA partan de la misma fuente de verdad.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function LabWaiting({ text }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 h-full" style={{ minHeight: 280 }}>
+      <Loader2 size={22} className="animate-spin" style={{ color: "rgba(16,185,129,0.6)" }} />
+      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.66rem", color: "rgba(255,255,255,0.35)" }}>{text}</span>
+    </div>
+  );
+}
+
+
 // ===== AgentDemo =====
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -10797,6 +11409,7 @@ function AgentDemo() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showWorkflow, setShowWorkflow] = useState(false);
   const [showBuilder, setShowBuilder]   = useState(false);
+  const [showContract, setShowContract] = useState(false);
   const [showContext, setShowContext]    = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -11035,6 +11648,40 @@ function AgentDemo() {
           </div>
         </motion.div>
         </div>{/* end CTAs row */}
+
+        {/* ── Contract Generator Lab CTA ── */}
+        <motion.div
+          whileHover={{ scale: 1.004 }}
+          whileTap={{ scale: 0.998 }}
+          onClick={() => setShowContract(true)}
+          className="flex items-center justify-between gap-4 px-5 py-4 rounded-2xl cursor-pointer mb-6"
+          style={{
+            background: "linear-gradient(135deg, #06281f 0%, #0a3a2a 50%, #0c2620 100%)",
+            border: "1px solid rgba(16,185,129,0.32)",
+            boxShadow: "0 4px 20px rgba(16,185,129,0.12)",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)" }}>
+              <FileText size={18} color="#34d399" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: "0.9rem", color: "#ffffff", lineHeight: 1.3 }}>
+                  Laboratorio · Generador de Contratos
+                </div>
+                <span className="px-1.5 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.18)", color: "#6ee7b7", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.52rem", letterSpacing: "0.05em" }}>NUEVO</span>
+              </div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.77rem", color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
+                JSON de flujo → contrato YAML estandarizado → escenarios BDD con códigos HTTP
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-shrink-0" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399", fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: "0.82rem", whiteSpace: "nowrap" }}>
+            Abrir laboratorio
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7h9M8 3.5L11.5 7 8 10.5" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_330px] gap-6">
           {/* ── Left: terminal + flow ── */}
@@ -11503,6 +12150,13 @@ function AgentDemo() {
       <AnimatePresence>
         {showBuilder && (
           <AgentBuilder onClose={() => setShowBuilder(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Contract Generator Lab modal */}
+      <AnimatePresence>
+        {showContract && (
+          <ContractGeneratorLab onClose={() => setShowContract(false)} />
         )}
       </AnimatePresence>
     </section>
