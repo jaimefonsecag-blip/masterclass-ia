@@ -126,11 +126,11 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { createRoot } from "react-dom/client";
 import { motion, AnimatePresence, MotionGlobalConfig } from "motion/react";
 import * as Slider from "@radix-ui/react-slider";
-import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, ArrowRightLeft, BarChart2, BookOpen, Bot, Brain, Bug, Building2, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Chrome, Clock, Code2, Cpu, CreditCard, Database, Eye, FileSpreadsheet, FileText, FolderOpen, GitBranch, Github, Globe, HardDrive, Hash, Headphones, Home, Inbox, Info, Layers, ListChecks, Loader2, Lock, Mail, Map, MessageSquare, Monitor, Pause, Play, Plug, RefreshCw, Repeat, Repeat2, RotateCcw, Search, Send, Server, ShieldAlert, Slack, Sparkles, Target, Ticket, Trash2, User, UserPlus, Wrench, X, Zap } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, ArrowRightLeft, BarChart2, BookOpen, Bot, Brain, Bug, Building2, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Chrome, Clock, Code2, Copy, Cpu, CreditCard, Database, Eye, FileSpreadsheet, FileText, FolderOpen, Gauge, GitBranch, Github, Globe, HardDrive, Hash, Headphones, Home, Inbox, Info, Layers, Lightbulb, ListChecks, Loader2, Lock, Mail, Map, MessageSquare, Monitor, Pause, Play, Plug, Quote, RefreshCw, Repeat, Repeat2, RotateCcw, Scissors, Search, Send, Server, ShieldAlert, Slack, Sparkles, Target, Ticket, Trash2, User, UserPlus, Wand2, Wrench, X, Zap } from "lucide-react";
 
 // ===== HomeScreen =====
 
-type SectionId = "ia" | "llms" | "tokens" | "agents" | "sdd" | "mcp" | "demo";
+type SectionId = "ia" | "prompts" | "llms" | "tokens" | "agents" | "sdd" | "mcp" | "demo";
 
 interface SectionMeta {
   id: SectionId;
@@ -159,8 +159,20 @@ const SECTIONS_META: SectionMeta[] = [
     colSpan: 2,
   },
   {
-    id: "llms",
+    id: "prompts",
     num: "02",
+    title: "Prompts & Prompt Engineering",
+    subtitle: "Cómo hablarle a la IA",
+    desc: "Qué es un prompt y sus partes, tácticas y técnicas para escribir buenos prompts, y trucos para respuestas concisas que gastan menos tokens.",
+    icon: <MessageSquare size={22} />,
+    accent: "#0ea5e9",
+    lightBg: "#e0f2fe",
+    tag: "interactivo",
+    colSpan: 1,
+  },
+  {
+    id: "llms",
+    num: "03",
     title: "LLMs",
     subtitle: "Modelos de Lenguaje",
     desc: "Pipeline de inferencia, pre-entrenamiento, RLHF, context window y comparativa de modelos.",
@@ -172,7 +184,7 @@ const SECTIONS_META: SectionMeta[] = [
   },
   {
     id: "tokens",
-    num: "03",
+    num: "04",
     title: "Tokens",
     subtitle: "Tokenizador en Vivo",
     desc: "Visualiza cómo el texto se fragmenta en tokens y calcula el costo real de cada llamada.",
@@ -184,7 +196,7 @@ const SECTIONS_META: SectionMeta[] = [
   },
   {
     id: "agents",
-    num: "04",
+    num: "05",
     title: "Agentes de IA",
     subtitle: "Arquitectura & Tipos",
     desc: "El ciclo percibir → razonar → actuar, componentes, tipos por complejidad e IA agéntica.",
@@ -196,7 +208,7 @@ const SECTIONS_META: SectionMeta[] = [
   },
   {
     id: "mcp",
-    num: "05",
+    num: "06",
     title: "Model Context Protocol",
     subtitle: "El USB-C de los agentes",
     desc: "Estándar abierto de Anthropic para conectar LLMs con herramientas, APIs y datos externos.",
@@ -208,7 +220,7 @@ const SECTIONS_META: SectionMeta[] = [
   },
   {
     id: "sdd",
-    num: "06",
+    num: "07",
     title: "Spec-Driven Development",
     subtitle: "SDD · Agentes · MCP",
     desc: "Invierte el orden: specs primero, código después. Aprende SDD con puertas de aprobación, ejemplos reales y el flujo completo de agentes.",
@@ -220,7 +232,7 @@ const SECTIONS_META: SectionMeta[] = [
   },
   {
     id: "demo",
-    num: "07",
+    num: "08",
     title: "Demo en Vivo",
     subtitle: "Agente trabajando",
     desc: "Observa un agente ejecutar tareas reales: análisis de ventas, bug fix, research, soporte bancario y más.",
@@ -936,6 +948,396 @@ function AISection() {
           {AI_TYPES_PURPOSE.map((item, i) => (
             <TypeCard key={item.title} item={item} index={i} />
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+// ===== PromptsSection =====
+
+// ── Anatomía de un prompt: partes ──
+const PROMPT_PARTS = [
+  {
+    id: "rol", label: "Rol / Persona", color: "#0ea5e9", icon: <User size={15} />,
+    text: "Actúa como un nutricionista clínico con experiencia en deporte.",
+    what: "Le dices al modelo QUÉ papel adoptar. Cambia el vocabulario, el nivel de detalle y el enfoque de toda la respuesta.",
+    tip: "Un rol específico enfoca el conocimiento: «eres médico» ≠ «eres pediatra que explica a padres primerizos».",
+  },
+  {
+    id: "contexto", label: "Contexto", color: "#6366f1", icon: <Layers size={15} />,
+    text: "Mi cliente es vegetariano, entrena 4 veces por semana y quiere ganar masa muscular.",
+    what: "La información de fondo que el modelo necesita para personalizar. Sin contexto, responde en genérico.",
+    tip: "Incluye solo lo relevante. Contexto de más diluye la atención del modelo y gasta tokens.",
+  },
+  {
+    id: "tarea", label: "Tarea / Instrucción", color: "#7c3aed", icon: <Target size={15} />,
+    text: "Diseña un plan de comidas de un día con sus macronutrientes.",
+    what: "La acción concreta que quieres. Es la única parte obligatoria — empieza con un verbo claro.",
+    tip: "Un verbo = una tarea. «Analiza y resume y traduce» confunde; divídelo o priorízalo.",
+  },
+  {
+    id: "formato", label: "Formato de salida", color: "#0891b2", icon: <FileText size={15} />,
+    text: "Devuélvelo como una tabla con columnas: comida, alimentos, calorías y proteína.",
+    what: "Cómo quieres que se vea la respuesta: tabla, JSON, lista, longitud, idioma.",
+    tip: "Pedir el formato exacto evita respuestas largas y te ahorra reescrituras (y tokens).",
+  },
+  {
+    id: "ejemplos", label: "Ejemplos (few-shot)", color: "#9333ea", icon: <Sparkles size={15} />,
+    text: 'Ejemplo de estilo → "Desayuno: avena con plátano · 420 kcal · 18 g proteína".',
+    what: "Muestras 1-3 ejemplos del resultado que esperas. El modelo imita el patrón con gran precisión.",
+    tip: "Es la técnica más potente para controlar estilo y formato sin explicarlo con palabras.",
+  },
+  {
+    id: "restricciones", label: "Restricciones", color: "#c026d3", icon: <ShieldAlert size={15} />,
+    text: "Máximo 2000 kcal. Nada de soya. No incluyas explicaciones, solo la tabla.",
+    what: "Límites y reglas: qué evitar, longitud máxima, tono, qué NO hacer.",
+    tip: "Las restricciones negativas («no hagas X») y los límites de longitud son tus mejores aliados para ahorrar tokens.",
+  },
+];
+
+// ── Técnicas de prompt engineering ──
+const PROMPT_TECHNIQUES = [
+  {
+    id: "zero", name: "Zero-shot", icon: <Zap size={16} />, color: "#0ea5e9",
+    tagline: "Pídelo directo, sin ejemplos",
+    when: "Tareas comunes y simples que el modelo ya domina (traducir, resumir, clasificar).",
+    bad: "Habla sobre el clima.",
+    good: "Resume en 3 viñetas el impacto del cambio climático en la agricultura de zonas áridas.",
+    note: "Funciona si la tarea es clara. Si el resultado falla, sube a few-shot o chain-of-thought.",
+  },
+  {
+    id: "few", name: "Few-shot", icon: <Sparkles size={16} />, color: "#6366f1",
+    tagline: "Muestra 2-3 ejemplos del patrón",
+    when: "Quieres un formato, estilo o criterio específico difícil de describir con palabras.",
+    bad: "Clasifica el sentimiento de estos comentarios.",
+    good: 'Clasifica el sentimiento.\n"Me encantó" → POSITIVO\n"Llegó tarde" → NEGATIVO\n"Está bien" → NEUTRO\n"No lo recomiendo" →',
+    note: "El modelo imita el patrón de los ejemplos. La técnica más fiable para controlar la salida.",
+  },
+  {
+    id: "cot", name: "Chain-of-Thought", icon: <Lightbulb size={16} />, color: "#7c3aed",
+    tagline: 'Pídele «pensar paso a paso»',
+    when: "Problemas de lógica, matemáticas o varios pasos donde el salto directo suele fallar.",
+    bad: "¿Cuánto es 17 × 24 menos 130?",
+    good: "Resuelve paso a paso, mostrando cada operación: 17 × 24 menos 130.",
+    note: "Razonar en voz alta mejora la exactitud — pero genera más tokens. Úsalo solo cuando importa la precisión.",
+  },
+  {
+    id: "role", name: "Role Prompting", icon: <User size={16} />, color: "#0891b2",
+    tagline: "Asigna un rol experto",
+    when: "Quieres un nivel de profundidad, tono o perspectiva profesional concreta.",
+    bad: "Revisa este contrato.",
+    good: "Actúa como abogado corporativo. Revisa este contrato y señala 3 cláusulas de riesgo.",
+    note: "El rol calibra vocabulario y profundidad. Combínalo con contexto para mejores resultados.",
+  },
+  {
+    id: "delim", name: "Delimitadores", icon: <Code2 size={16} />, color: "#9333ea",
+    tagline: "Separa la instrucción de los datos",
+    when: "Pegas texto largo (un email, código, un documento) y no quieres que se confunda con la orden.",
+    bad: "Corrige la ortografía de hola como estas todo bien",
+    good: 'Corrige la ortografía del texto entre triple comilla:\n"""\nhola como estas todo bien\n"""',
+    note: "Usar ###, ``` o \"\"\" evita que el modelo mezcle tus instrucciones con el contenido a procesar.",
+  },
+  {
+    id: "format", name: "Formato explícito", icon: <ListChecks size={16} />, color: "#c026d3",
+    tagline: "Define la estructura exacta de salida",
+    when: "Vas a usar la respuesta en otro sistema o necesitas consistencia (JSON, tabla, CSV).",
+    bad: "Dame los datos del usuario.",
+    good: 'Devuelve SOLO un JSON válido:\n{ "nombre": string, "edad": number, "activo": boolean }',
+    note: "Pedir el esquema exacto hace la salida predecible y parseable, sin texto sobrante.",
+  },
+];
+
+// ── Trucos para respuestas concisas / ahorrar tokens ──
+const TOKEN_TRICKS = [
+  { id: "limite", cmd: "Responde en máximo 3 frases.", desc: "Limita la longitud explícitamente", cut: 0.34 },
+  { id: "preambulo", cmd: "Sin preámbulos ni introducciones. Ve directo a la respuesta.", desc: "Elimina el relleno de cortesía", cut: 0.14 },
+  { id: "solo", cmd: "Devuelve solo el resultado, sin explicaciones.", desc: "Solo el dato, cero justificación", cut: 0.30 },
+  { id: "vinetas", cmd: "Responde en viñetas cortas, no en párrafos.", desc: "Bullets en vez de prosa", cut: 0.12 },
+  { id: "norepetir", cmd: "No repitas mi pregunta ni el enunciado.", desc: "Evita el eco de la consigna", cut: 0.10 },
+  { id: "formato", cmd: "Formato: JSON compacto, sin espacios extra.", desc: "Salida estructurada y mínima", cut: 0.16 },
+];
+
+function PartChip({ part, active, onClick }) {
+  return (
+    <button onClick={onClick}
+      className="rounded-xl px-3 py-2 flex items-center gap-2 text-left"
+      style={{
+        background: active ? part.color : "#fff",
+        border: `1px solid ${active ? part.color : "rgba(15,23,42,0.1)"}`,
+        color: active ? "#fff" : "#374151", cursor: "pointer", transition: "all .2s",
+        boxShadow: active ? `0 6px 18px ${part.color}33` : "0 1px 3px rgba(0,0,0,0.04)",
+      }}>
+      <span style={{ color: active ? "#fff" : part.color, display: "flex" }}>{part.icon}</span>
+      <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.78rem" }}>{part.label}</span>
+    </button>
+  );
+}
+
+// 1) Constructor / anatomía interactiva
+function PromptBuilder() {
+  const [on, setOn] = useState({ rol: true, contexto: true, tarea: true, formato: true, ejemplos: false, restricciones: false });
+  const [copied, setCopied] = useState(false);
+  const toggle = (id) => setOn((s) => ({ ...s, [id]: !s[id] }));
+
+  const active = PROMPT_PARTS.filter((p) => on[p.id]);
+  const assembled = active.map((p) => p.text).join("\n");
+  const hasTask = on.tarea;
+  const score = Math.min(100, Math.round((active.length / PROMPT_PARTS.length) * 100));
+  const quality = !hasTask ? { label: "Falta la tarea", color: "#dc2626" }
+    : score >= 80 ? { label: "Excelente", color: "#059669" }
+    : score >= 50 ? { label: "Bueno", color: "#0891b2" }
+    : { label: "Básico", color: "#f59e0b" };
+
+  const copy = () => {
+    navigator.clipboard?.writeText(assembled).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {});
+  };
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(14,165,233,0.16)", boxShadow: "0 4px 24px rgba(14,165,233,0.07)" }}>
+      <div className="px-5 py-4" style={{ background: "linear-gradient(135deg,#0ea5e9,#6366f1)" }}>
+        <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem", letterSpacing: "0.1em", color: "rgba(255,255,255,0.85)", marginBottom: 3 }}>CONSTRUCTOR INTERACTIVO</div>
+        <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.05rem", color: "#fff" }}>Arma tu prompt parte por parte</div>
+      </div>
+      <div className="p-5 grid gap-5" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
+        <div className="flex flex-wrap gap-2">
+          {PROMPT_PARTS.map((p) => <PartChip key={p.id} part={p} active={on[p.id]} onClick={() => toggle(p.id)} />)}
+        </div>
+
+        {/* assembled prompt */}
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(15,23,42,0.1)" }}>
+          <div className="flex items-center justify-between px-3 py-2" style={{ background: "#0d0e1a" }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", color: "#7dd3fc" }}>prompt.txt</span>
+            <button onClick={copy} className="flex items-center gap-1.5 rounded-md px-2 py-1" style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#e0e7ff", cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem" }}>
+              {copied ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
+            </button>
+          </div>
+          <div style={{ background: "#0d0e1a", padding: "14px 16px", minHeight: 90 }}>
+            {active.length === 0 ? (
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.74rem", color: "#64748b" }}>Activa al menos una parte…</span>
+            ) : active.map((p) => (
+              <div key={p.id} className="flex items-start gap-2 mb-1.5">
+                <span style={{ width: 8, height: 8, borderRadius: 3, background: p.color, flexShrink: 0, marginTop: 6 }} />
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.74rem", color: "#e0e7ff", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{p.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* quality meter */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 rounded-full overflow-hidden" style={{ height: 8, background: "#eef2ff" }}>
+            <motion.div animate={{ width: `${hasTask ? score : Math.max(score, 12)}%`, background: quality.color }} transition={{ duration: 0.4 }} style={{ height: "100%", borderRadius: 99 }} />
+          </div>
+          <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.78rem", color: quality.color, minWidth: 96, textAlign: "right" }}>{quality.label}</span>
+        </div>
+        {!hasTask && <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.72rem", color: "#dc2626", margin: "-8px 0 0" }}>⚠ La <strong>tarea</strong> es la única parte obligatoria de todo prompt.</p>}
+
+        {/* explanation of active parts */}
+        <div className="grid sm:grid-cols-2 gap-2">
+          {active.map((p) => (
+            <div key={p.id} className="rounded-xl p-3" style={{ background: `${p.color}0c`, border: `1px solid ${p.color}22` }}>
+              <div className="flex items-center gap-2 mb-1">
+                <span style={{ color: p.color, display: "flex" }}>{p.icon}</span>
+                <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.74rem", color: "#111827" }}>{p.label}</span>
+              </div>
+              <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.72rem", color: "#4b5563", lineHeight: 1.5, margin: 0 }}>{p.what}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 2) Técnicas — acordeón
+function TechniqueCard({ t, open, onToggle }) {
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: `1px solid ${open ? t.color + "44" : "rgba(15,23,42,0.08)"}`, transition: "border .2s", boxShadow: open ? `0 8px 26px ${t.color}18` : "0 1px 4px rgba(0,0,0,0.04)" }}>
+      <button onClick={onToggle} className="w-full flex items-center gap-3 px-4 py-3.5 text-left" style={{ background: "none", border: "none", cursor: "pointer" }}>
+        <div className="rounded-xl flex items-center justify-center flex-shrink-0" style={{ width: 38, height: 38, background: `${t.color}14`, color: t.color }}>{t.icon}</div>
+        <div className="flex-1 min-w-0">
+          <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.9rem", color: "#111827" }}>{t.name}</div>
+          <div style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.74rem", color: "#9ca3af" }}>{t.tagline}</div>
+        </div>
+        <ChevronDown size={18} style={{ color: t.color, flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform .25s" }} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28 }} style={{ overflow: "hidden" }}>
+            <div className="px-4 pb-4 flex flex-col gap-3">
+              <div className="rounded-xl p-3" style={{ background: `${t.color}0a`, borderLeft: `3px solid ${t.color}` }}>
+                <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.78rem", color: "#374151", lineHeight: 1.55, margin: 0 }}><strong style={{ color: t.color }}>Cuándo usarla: </strong>{t.when}</p>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2.5">
+                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(220,38,38,0.18)" }}>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5" style={{ background: "#fef2f2" }}><X size={12} style={{ color: "#dc2626" }} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem", color: "#dc2626", letterSpacing: "0.06em" }}>FLOJO</span></div>
+                  <pre style={{ margin: 0, padding: "10px 12px", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7rem", color: "#7f1d1d", whiteSpace: "pre-wrap", lineHeight: 1.55, background: "#fff" }}>{t.bad}</pre>
+                </div>
+                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(5,150,105,0.2)" }}>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5" style={{ background: "#ecfdf5" }}><Check size={12} style={{ color: "#059669" }} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem", color: "#059669", letterSpacing: "0.06em" }}>SÓLIDO</span></div>
+                  <pre style={{ margin: 0, padding: "10px 12px", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7rem", color: "#064e3b", whiteSpace: "pre-wrap", lineHeight: 1.55, background: "#fff" }}>{t.good}</pre>
+                </div>
+              </div>
+              <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.74rem", color: "#6b7280", lineHeight: 1.55, margin: 0 }}>💡 {t.note}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// 3) Laboratorio de tokens
+function TokenSaverLab() {
+  const [on, setOn] = useState({});
+  const toggle = (id) => setOn((s) => ({ ...s, [id]: !s[id] }));
+  const BASE = 540;
+  const totalCut = Math.min(0.82, TOKEN_TRICKS.reduce((a, t) => a + (on[t.id] ? t.cut : 0), 0));
+  const after = Math.round(BASE * (1 - totalCut));
+  const pct = Math.round(totalCut * 100);
+  // costo de salida aprox a $15 / 1M tokens, 1000 respuestas
+  const costBase = (BASE * 1000 / 1e6) * 15;
+  const costAfter = (after * 1000 / 1e6) * 15;
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(124,58,237,0.16)", boxShadow: "0 4px 24px rgba(124,58,237,0.07)" }}>
+      <div className="px-5 py-4 flex items-center gap-3" style={{ background: "linear-gradient(135deg,#7c3aed,#0891b2)" }}>
+        <Scissors size={18} style={{ color: "#fff" }} />
+        <div>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.58rem", letterSpacing: "0.1em", color: "rgba(255,255,255,0.85)" }}>LABORATORIO DE TOKENS</div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.05rem", color: "#fff" }}>Activa trucos y mira cuánto ahorras</div>
+        </div>
+      </div>
+      <div className="p-5 grid gap-4" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
+        <div className="grid gap-2">
+          {TOKEN_TRICKS.map((t) => {
+            const a = !!on[t.id];
+            return (
+              <button key={t.id} onClick={() => toggle(t.id)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left" style={{ background: a ? "#f5f3ff" : "#fafafa", border: `1px solid ${a ? "rgba(124,58,237,0.3)" : "rgba(15,23,42,0.07)"}`, cursor: "pointer", transition: "all .15s" }}>
+                <div className="rounded-md flex items-center justify-center flex-shrink-0" style={{ width: 22, height: 22, background: a ? "#7c3aed" : "#e5e7eb", color: "#fff" }}>{a ? <Check size={13} /> : null}</div>
+                <div className="flex-1 min-w-0">
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", color: a ? "#5b21b6" : "#374151", lineHeight: 1.4 }}>{t.cmd}</div>
+                  <div style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.66rem", color: "#9ca3af" }}>{t.desc}</div>
+                </div>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.64rem", fontWeight: 600, color: a ? "#7c3aed" : "#cbd5e1", flexShrink: 0 }}>−{Math.round(t.cut * 100)}%</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* visualizer */}
+        <div className="rounded-xl p-4" style={{ background: "#0d0e1a" }}>
+          <div className="flex items-center justify-between mb-2">
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: "#94a3b8" }}>respuesta típica</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: "#64748b" }}>{BASE} tokens</span>
+          </div>
+          <div className="rounded-full overflow-hidden mb-3" style={{ height: 10, background: "rgba(255,255,255,0.08)" }}>
+            <div style={{ height: "100%", width: "100%", background: "rgba(148,163,184,0.4)", borderRadius: 99 }} />
+          </div>
+          <div className="flex items-center justify-between mb-2">
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: "#7dd3fc" }}>con tus trucos</span>
+            <motion.span key={after} initial={{ scale: 1.2, color: "#34d399" }} animate={{ scale: 1, color: "#7dd3fc" }} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem" }}>{after} tokens</motion.span>
+          </div>
+          <div className="rounded-full overflow-hidden" style={{ height: 10, background: "rgba(255,255,255,0.08)" }}>
+            <motion.div animate={{ width: `${100 - pct}%` }} transition={{ duration: 0.4 }} style={{ height: "100%", background: "linear-gradient(90deg,#0ea5e9,#34d399)", borderRadius: 99 }} />
+          </div>
+          <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            <div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem", color: "#64748b" }}>AHORRO</div>
+              <motion.div key={pct} initial={{ scale: 1.15 }} animate={{ scale: 1 }} style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.4rem", color: "#34d399", lineHeight: 1 }}>{pct}%</motion.div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem", color: "#64748b" }}>COSTO / 1.000 RESPUESTAS</div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.8rem", color: "#e0e7ff" }}>
+                <span style={{ textDecoration: pct > 0 ? "line-through" : "none", color: "#64748b" }}>${costBase.toFixed(2)}</span>
+                {pct > 0 && <span style={{ color: "#34d399" }}> ${costAfter.toFixed(2)}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+        <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.7rem", color: "#9ca3af", lineHeight: 1.5, margin: 0 }}>
+          Cifras ilustrativas para mostrar el efecto relativo. La regla de oro: <strong style={{ color: "#7c3aed" }}>pide exactamente lo que necesitas y nada más</strong> — menos tokens de salida = menos costo y menos latencia.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function PromptsSection() {
+  const [openTech, setOpenTech] = useState("few");
+  const eyebrow = { background: "#e0f2fe", color: "#0284c7", fontFamily: "'JetBrains Mono', monospace", border: "1px solid rgba(2,132,199,0.2)" };
+
+  return (
+    <section className="py-24 px-6" style={{ background: "#f5f7ff" }}>
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-14">
+          <span className="inline-block text-sm mb-4 px-3 py-1 rounded-full" style={eyebrow}>02 — Comunicación con la IA</span>
+          <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 4vw, 3rem)", color: "#111827", lineHeight: 1.15, letterSpacing: "-0.02em" }}>
+            Prompts &amp; <span style={{ color: "#0ea5e9" }}>Prompt Engineering</span>
+          </h2>
+          <p className="mt-4 max-w-2xl" style={{ fontFamily: "'Inter', sans-serif", fontSize: "1.05rem", lineHeight: 1.7, color: "#6b7280" }}>
+            Un <strong>prompt</strong> es la instrucción que le das a un modelo de IA. La calidad de la respuesta depende casi por completo de cómo lo escribes — por eso «hablarle bien» a la IA es una habilidad propia: la <strong>ingeniería de prompts</strong>.
+          </p>
+        </motion.div>
+
+        {/* ¿Qué es? quick concept */}
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="grid sm:grid-cols-3 gap-3 mb-16">
+          {[
+            { icon: <MessageSquare size={18} />, t: "Es tu interfaz", d: "El prompt es el único canal por el que diriges al modelo. No hay botones: solo lenguaje." },
+            { icon: <Target size={18} />, t: "Precisión > magia", d: "El modelo no adivina lo que quieres. Cuanto más claro y específico el prompt, mejor el resultado." },
+            { icon: <Gauge size={18} />, t: "Eficiencia importa", d: "Un buen prompt no solo mejora la respuesta: la acorta, la enfoca y gasta menos tokens." },
+          ].map((c, i) => (
+            <div key={i} className="rounded-2xl p-4" style={{ background: "#fff", border: "1px solid rgba(14,165,233,0.12)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+              <div className="rounded-xl flex items-center justify-center mb-2.5" style={{ width: 38, height: 38, background: "#e0f2fe", color: "#0ea5e9" }}>{c.icon}</div>
+              <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.86rem", color: "#111827", marginBottom: 4 }}>{c.t}</div>
+              <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.76rem", color: "#6b7280", lineHeight: 1.55, margin: 0 }}>{c.d}</p>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Anatomía / constructor */}
+        <div className="mb-16">
+          <div className="flex items-center gap-2 mb-2"><Wand2 size={16} style={{ color: "#0ea5e9" }} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", letterSpacing: "0.08em", color: "#0284c7" }}>ANATOMÍA DE UN PROMPT</span></div>
+          <h3 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.5rem", color: "#111827", marginBottom: 6 }}>¿De qué se compone un buen prompt?</h3>
+          <p className="max-w-2xl mb-6" style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.92rem", color: "#6b7280", lineHeight: 1.65 }}>
+            Activa y desactiva las partes para ver cómo se construye un prompt completo. Solo la <strong>tarea</strong> es obligatoria; el resto sube la calidad y la precisión.
+          </p>
+          <PromptBuilder />
+        </div>
+
+        {/* Técnicas */}
+        <div className="mb-16">
+          <div className="flex items-center gap-2 mb-2"><Sparkles size={16} style={{ color: "#7c3aed" }} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", letterSpacing: "0.08em", color: "#7c3aed" }}>TÁCTICAS &amp; TÉCNICAS</span></div>
+          <h3 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.5rem", color: "#111827", marginBottom: 6 }}>Técnicas de ingeniería de prompts</h3>
+          <p className="max-w-2xl mb-6" style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.92rem", color: "#6b7280", lineHeight: 1.65 }}>
+            Toca cada técnica para ver cuándo usarla y comparar un prompt flojo contra uno sólido.
+          </p>
+          <div className="grid gap-2.5">
+            {PROMPT_TECHNIQUES.map((t) => (
+              <TechniqueCard key={t.id} t={t} open={openTech === t.id} onToggle={() => setOpenTech(openTech === t.id ? "" : t.id)} />
+            ))}
+          </div>
+        </div>
+
+        {/* Token savers */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-2"><Zap size={16} style={{ color: "#0891b2" }} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", letterSpacing: "0.08em", color: "#0891b2" }}>RESPUESTAS CONCISAS · AHORRO DE TOKENS</span></div>
+          <h3 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.5rem", color: "#111827", marginBottom: 6 }}>Comandos para que responda corto y gaste menos</h3>
+          <p className="max-w-2xl mb-6" style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.92rem", color: "#6b7280", lineHeight: 1.65 }}>
+            Cada token de salida cuesta dinero y tiempo. Estas frases, añadidas al final de tu prompt, recortan la verborrea sin perder la respuesta.
+          </p>
+          <TokenSaverLab />
+        </div>
+
+        {/* Cierre */}
+        <div className="rounded-2xl p-5" style={{ background: "linear-gradient(135deg,#e0f2fe,#ede9fe)", borderLeft: "3px solid #0ea5e9" }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", letterSpacing: "0.08em", color: "#0284c7", marginBottom: 6 }}>LA REGLA DE ORO</div>
+          <p style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "1rem", color: "#1e3a8a", lineHeight: 1.55, margin: 0 }}>
+            Sé específico en lo que pides, da el contexto justo, muestra el formato que esperas y limita la longitud. Un prompt claro vale más que un modelo más grande.
+          </p>
         </div>
       </div>
     </section>
@@ -11052,13 +11454,14 @@ function AgentDemo() {
 
 // ===== App =====
 const SECTION_COMPONENTS: Record<SectionId, React.ComponentType> = {
-  ia:     AISection,
-  llms:   LLMSection,
-  tokens: TokenizerSection,
-  agents: AgentsSection,
-  sdd:    SDDSection,
-  mcp:    MCPSection,
-  demo:   AgentDemo,
+  ia:      AISection,
+  prompts: PromptsSection,
+  llms:    LLMSection,
+  tokens:  TokenizerSection,
+  agents:  AgentsSection,
+  sdd:     SDDSection,
+  mcp:     MCPSection,
+  demo:    AgentDemo,
 };
 
 // Page transition variants
@@ -11201,9 +11604,31 @@ setTimeout(() => {
       });
     }
 
+    // Fetch the bundle with retries + validation. A transient network hiccup can
+    // return a truncated body or an HTML error page; compiling that yields a
+    // bogus "UnexpectedToken" parse error, so we verify and retry before failing.
+    async function fetchBundle() {
+      var lastErr;
+      for (var attempt = 0; attempt < 4; attempt++) {
+        try {
+          var res = await fetch("app/bundle.jsx", { cache: "no-store" });
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          var txt = await res.text();
+          if (txt.length > 1000 && txt.indexOf("import React") !== -1) return txt;
+          throw new Error("respuesta incompleta");
+        } catch (e) {
+          lastErr = e;
+          await new Promise(function (r) { setTimeout(r, 400 * (attempt + 1)); });
+        }
+      }
+      throw lastErr || new Error("no se pudo descargar el contenido");
+    }
+
     try {
       const src = document.getElementById("__bundle_src").textContent;
-      const code = await compile(src);
+      let code;
+      try { code = await compile(src); }
+      catch (e1) { code = await compileMain(src); } // last-ditch retry on main thread
       const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
       await import(url);
     } catch (err) {
