@@ -6182,6 +6182,55 @@ const CONTRACT_GUIDED_STEPS: GuidedStep[] = [
   },
 ];
 
+// ─── Example-specific node configuration (what each node is set to do per loaded example) ──
+const EXAMPLE_NODE_CONFIG: Record<string, Record<string, string>> = {
+  bian: {
+    t1: "Configurado como entrada manual: recibe el producto bancario en lenguaje natural + el contexto (dominio, solicitante). Es el disparador del flujo de nombramiento.",
+    n1: "System prompt: «Eres un experto en BIAN v12». Consulta los 3 repos, recibe sus respuestas y sintetiza el nombre estándar. Model: claude-sonnet-4-6 · temperature 0.1.",
+    n2: "GET al repo de Azure DevOps con la guía institucional de nombramiento (formato [ServiceDomain]/[Capability]/[Action]-v[N]).",
+    n3: "GET al catálogo oficial de BIAN Service Domains para validar el dominio del servicio.",
+    n4: "GET al Excel de subdominios para mapear capacidades y acciones permitidas.",
+    n5: "Devuelve el nombramiento BIAN validado: nombre estándar, ruta de API REST y operaciones, listo para gobierno de datos.",
+  },
+  contract: {
+    t1: "Entrada manual: recibe el JSON con el flujo de proceso y el contexto funcional (dominio, actor, objetivo, actividades y la entidad con sus campos y reglas).",
+    n1: "System prompt: «Eres un generador de contratos de API». Lee la plantilla y el catálogo, y genera con el Code node el contrato YAML + un escenario BDD por respuesta HTTP. temperature 0.1.",
+    n2: "GET a la plantilla estándar de contrato (OpenAPI 3.0.3 YAML): define cómo mapear la entidad a un schema y un path por actividad de creación.",
+    n3: "GET al catálogo institucional de códigos HTTP por escenario: negocio (201, 409, 422, 403) y técnicos (400, 500, 503).",
+    n4: "Code node: ejecuta la generación real — arma el contrato.yaml y deriva el contrato.feature (Gherkin), un escenario por cada respuesta HTTP.",
+    n5: "Entrega los dos artefactos consistentes entre sí: el contrato YAML estandarizado y la batería de escenarios BDD con sus códigos HTTP.",
+  },
+  sales: {
+    t1: "Trigger programado (cron): dispara el análisis automáticamente, p. ej. cada lunes a las 8:00.",
+    n1: "Lee la hoja de Google Sheets con los datos de ventas del periodo (rango configurado).",
+    n2: "System prompt orientado a análisis comercial: detecta tendencias, anomalías y genera el resumen ejecutivo.",
+    n3: "Code node: calcula métricas (variación %, top productos, proyección) que alimentan al agente.",
+    n4: "Publica el resumen en el canal de Slack del equipo comercial.",
+    n5: "Cierra el flujo confirmando la entrega del reporte.",
+  },
+  email: {
+    t1: "Trigger programado: revisa la bandeja en intervalos definidos.",
+    n1: "Lee los correos nuevos de Gmail (etiqueta/bandeja configurada).",
+    n2: "Clasifica cada email por intención y urgencia, y decide la ruta.",
+    n3: "Notifica en Slack los correos urgentes que requieren atención humana.",
+    n4: "Responde automáticamente los correos rutinarios vía Gmail.",
+    n5: "Cierra el flujo de triaje confirmando el procesamiento.",
+  },
+  asistente: {
+    t1: "Webhook: recibe la consulta del cliente desde la app móvil (user_id, query, session).",
+    n1: "Orquesta la respuesta: decide qué fuentes consultar (CRM, core bancario, buró) según la intención detectada.",
+  },
+};
+function exampleNodeConfig(template, nodeId) {
+  return (EXAMPLE_NODE_CONFIG[template] && EXAMPLE_NODE_CONFIG[template][nodeId]) || null;
+}
+function exampleNodeOutput(template, nodeId) {
+  if (template === "bian") return BIAN_MOCK_OUTPUTS[nodeId] || null;
+  if (template === "contract") return CONTRACT_MOCK_OUTPUTS[nodeId] || null;
+  if (template === "asistente") return BANKING_ASISTENTE_OUTPUTS[nodeId] || null;
+  return null;
+}
+
 // ─── Lab configs registry ─────────────────────────────────────────────────────
 const LAB_CONFIGS: Record<string, {
   templateId: string; eyebrow: string; title: string; context: string;
@@ -6373,10 +6422,12 @@ function CanvasNode({ node, isSelected, simStep, connectFrom, onSelect, onMouseD
 }
 
 // ─── NodeDetailPanel ──────────────────────────────────────────────────────────
-function NodeDetailPanel({ type, edgeColor }: { type:string; edgeColor:string }) {
+function NodeDetailPanel({ type, edgeColor, nodeId, template, exampleName }: { type:string; edgeColor:string; nodeId?:string; template?:string; exampleName?:string }) {
   const def    = NODE_DEFS[type];
   const detail = NODE_DETAIL_INFO[type];
   if (!def || !detail) return null;
+  const exCfg = (nodeId && template) ? exampleNodeConfig(template, nodeId) : null;
+  const exOut = (nodeId && template) ? exampleNodeOutput(template, nodeId) : null;
   return (
     <div className="flex flex-col gap-4 p-5 overflow-y-auto">
       <div className="flex items-center gap-3">
@@ -6386,6 +6437,15 @@ function NodeDetailPanel({ type, edgeColor }: { type:string; edgeColor:string })
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.58rem", color:def.color, marginTop:2, letterSpacing:"0.06em" }}>{def.category.toUpperCase()} · {detail.role}</div>
         </div>
       </div>
+
+      {exCfg && (
+        <div className="rounded-xl p-3" style={{ background:`${def.color}18`, border:`1px solid ${def.color}45` }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.58rem", color:def.color, marginBottom:6, letterSpacing:"0.08em", display:"flex", alignItems:"center", gap:6 }}>
+            ⚙️ EN ESTE EJEMPLO{exampleName ? <span style={{ color:"rgba(255,255,255,0.4)", fontWeight:400 }}>· {exampleName}</span> : null}
+          </div>
+          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:"0.76rem", color:"rgba(255,255,255,0.82)", lineHeight:1.65, margin:0 }}>{exCfg}</p>
+        </div>
+      )}
 
       <div className="rounded-xl p-3" style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)" }}>
         <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.58rem", color:"rgba(255,255,255,0.3)", marginBottom:6, letterSpacing:"0.08em" }}>¿CÓMO FUNCIONA?</div>
@@ -6412,8 +6472,8 @@ function NodeDetailPanel({ type, edgeColor }: { type:string; edgeColor:string })
       </div>
 
       <div className="rounded-xl p-3" style={{ background:"rgba(0,0,0,0.25)", border:"1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.58rem", color:"rgba(255,255,255,0.3)", marginBottom:6, letterSpacing:"0.08em" }}>MOCK OUTPUT</div>
-        <pre style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.6rem", color:"rgba(255,255,255,0.4)", whiteSpace:"pre-wrap", margin:0, lineHeight:1.6 }}>{def.mockOutput}</pre>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.58rem", color:"rgba(255,255,255,0.3)", marginBottom:6, letterSpacing:"0.08em" }}>{exOut ? "OUTPUT EN ESTE EJEMPLO" : "MOCK OUTPUT"}</div>
+        <pre style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:"0.6rem", color:exOut ? "rgba(167,243,208,0.75)" : "rgba(255,255,255,0.4)", whiteSpace:"pre-wrap", margin:0, lineHeight:1.6 }}>{exOut || def.mockOutput}</pre>
       </div>
     </div>
   );
@@ -7127,7 +7187,7 @@ function AgentBuilder({ onClose }: AgentBuilderProps) {
               <AnimatePresence mode="wait">
                 {rightPanel === "node" && selNode ? (
                   <motion.div key="node" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}>
-                    <NodeDetailPanel type={selNode.type} edgeColor={NODE_DEFS[selNode.type]?.color ?? "#6366f1"} />
+                    <NodeDetailPanel type={selNode.type} edgeColor={NODE_DEFS[selNode.type]?.color ?? "#6366f1"} nodeId={selNode.id} template={template} exampleName={TEMPLATES[template]?.name} />
                   </motion.div>
                 ) : rightPanel === "node" ? (
                   <motion.div key="node-hint" initial={{ opacity:0 }} animate={{ opacity:1 }} className="p-5">
@@ -11409,7 +11469,6 @@ function AgentDemo() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showWorkflow, setShowWorkflow] = useState(false);
   const [showBuilder, setShowBuilder]   = useState(false);
-  const [showContract, setShowContract] = useState(false);
   const [showContext, setShowContext]    = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -11648,40 +11707,6 @@ function AgentDemo() {
           </div>
         </motion.div>
         </div>{/* end CTAs row */}
-
-        {/* ── Contract Generator Lab CTA ── */}
-        <motion.div
-          whileHover={{ scale: 1.004 }}
-          whileTap={{ scale: 0.998 }}
-          onClick={() => setShowContract(true)}
-          className="flex items-center justify-between gap-4 px-5 py-4 rounded-2xl cursor-pointer mb-6"
-          style={{
-            background: "linear-gradient(135deg, #06281f 0%, #0a3a2a 50%, #0c2620 100%)",
-            border: "1px solid rgba(16,185,129,0.32)",
-            boxShadow: "0 4px 20px rgba(16,185,129,0.12)",
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)" }}>
-              <FileText size={18} color="#34d399" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: "0.9rem", color: "#ffffff", lineHeight: 1.3 }}>
-                  Laboratorio · Generador de Contratos
-                </div>
-                <span className="px-1.5 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.18)", color: "#6ee7b7", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.52rem", letterSpacing: "0.05em" }}>NUEVO</span>
-              </div>
-              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.77rem", color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
-                JSON de flujo → contrato YAML estandarizado → escenarios BDD con códigos HTTP
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-shrink-0" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399", fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: "0.82rem", whiteSpace: "nowrap" }}>
-            Abrir laboratorio
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7h9M8 3.5L11.5 7 8 10.5" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </div>
-        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_330px] gap-6">
           {/* ── Left: terminal + flow ── */}
@@ -12153,12 +12178,7 @@ function AgentDemo() {
         )}
       </AnimatePresence>
 
-      {/* Contract Generator Lab modal */}
-      <AnimatePresence>
-        {showContract && (
-          <ContractGeneratorLab onClose={() => setShowContract(false)} />
-        )}
-      </AnimatePresence>
+      {/* Contract Generator Lab now lives inside the Agent Builder (📄 Lab Guiado Contratos) */}
     </section>
   );
 }
