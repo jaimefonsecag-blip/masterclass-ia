@@ -1323,6 +1323,143 @@ function TokenSaverLab() {
   );
 }
 
+// ── Juego: Cuadro de búsqueda o compañero de reflexión ──
+const CAPABILITY_SCENARIOS = [
+  {
+    prompt: "¿Cuál es el tipo de cambio de dólares estadounidenses a euros hoy?",
+    correct: "search",
+    badge: "TERRITORIO DEL CUADRO DE BÚSQUEDA",
+    text: "El asistente con gusto responderá, pero esta pregunta no necesita compañero. Un dato concreto de una fuente autorizada. Este es el terreno habitual de un cuadro de búsqueda: nada sobre ti o tu trabajo cambia la respuesta, así que no hay nada adicional que un compañero de reflexión pueda aportar.",
+  },
+  {
+    prompt: "“Reescribe mi actualización a continuación para que la demora se interprete como una decisión, no como una disculpa.”",
+    note: "(con tu borrador de tres párrafos pegado debajo)",
+    correct: "thinking",
+    badge: "TRABAJO EN EQUIPO PARA REFLEXIONAR",
+    text: "No del todo; esto requiere tu participación. El trabajo consiste en tu borrador, más una evaluación del tono. El asistente lee lo que escribiste, conserva los datos y reformula la presentación. Si la primera versión resulta demasiado directa, se lo indicas y se ajusta. Un cuadro de búsqueda te mostraría un artículo sobre cómo redactar anuncios.",
+  },
+  {
+    prompt: "“La mejor estructura para una presentación de revisión trimestral de negocios”",
+    correct: "thinking",
+    badge: "TRABAJO DE COLABORACIÓN (ESCRITO COMO UNA BÚSQUEDA)",
+    text: "Justo — léase literalmente, es una búsqueda. Escrito así, es una búsqueda — y obtendrías diez plantillas genéricas que no reconocen tu moneda. Así es como la mayoría de la gente lo escribe, y por eso mismo los resultados son decepcionantes.",
+    subLabel: "LA MISMA NECESIDAD, ENTREGADA AL ASISTENTE",
+    subText: '"Aquí tenéis el resumen del trimestre pasado y las dos diapositivas que la dirección rechazó. Reestructurad la información para este trimestre."',
+  },
+  {
+    prompt: "“He copiado a continuación el hilo de quejas de un cliente. Ayúden me a entender qué es lo que realmente solicitan antes de responder.”",
+    correct: "thinking",
+    badge: "TRABAJO EN EQUIPO PARA REFLEXIONAR",
+    text: "No exactamente; en este caso, necesitas participar. No hay ninguna página que consultar. La respuesta surge de leer el hilo que trajiste y analizarlo, y de que corrijas la primera interpretación: «No buscan un reembolso, quieren una fecha definitiva». Ese intercambio de ideas es fundamental.",
+  },
+  {
+    prompt: "¿Cuál es la diferencia entre una orden de compra y una factura?",
+    correct: "search",
+    badge: "TERRITORIO DEL CUADRO DE BÚSQUEDA",
+    text: "Claro: tal como está escrito, aún no me necesita. Es una definición; un cuadro de búsqueda o el asistente te dan la misma respuesta clara, y nada de eso tiene que ver contigo. Se convierte en un trabajo de colaboración en el momento en que tu situación entra en juego.",
+    subLabel: "LA VERSIÓN QUE NECESITARÍA AL ASISTENTE",
+    subText: '"Un proveedor nos envió una factura sin una orden de compra adjunta. Teniendo en cuenta cómo nuestro equipo gestiona las aprobaciones, ¿qué debemos hacer a continuación?"',
+  },
+  {
+    prompt: "¿Cuántos días laborables hay entre el 3 y el 24 de marzo?",
+    correct: "search",
+    badge: "TERRITORIO DEL CUADRO DE BÚSQUEDA",
+    text: "El asistente lo aceptará, pero aquí no hay nada que un compañero pueda hacer. Responderá en una sola línea, igual que un calendario o un cuadro de búsqueda. No hay nada tuyo en la pregunta, así que no hay nada que un compañero pueda añadir. No todas las solicitudes requieren uno.",
+  },
+];
+
+function CapabilitiesGame() {
+  const [idx, setIdx] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [history, setHistory] = useState([]);
+  const total = CAPABILITY_SCENARIOS.length;
+  const s = CAPABILITY_SCENARIOS[idx];
+
+  const pick = (choice) => {
+    if (picked) return;
+    setPicked(choice);
+    setHistory((h) => { const n = h.slice(); n[idx] = s.correct; return n; });
+  };
+  const next = () => {
+    if (idx < total - 1) { setIdx(idx + 1); setPicked(null); }
+  };
+  const restart = () => { setIdx(0); setPicked(null); setHistory([]); };
+
+  const col = (kind) => kind === "search" ? "#3b5bdb" : "#ea580c";
+
+  return (
+    <div className="rounded-2xl p-5" style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+      <h4 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.15rem", color: "#111827", margin: "0 0 14px" }}>¿Cuál de estas preguntas necesita un compañero para pensar?</h4>
+
+      {/* progress */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="flex gap-1.5 flex-1">
+          {CAPABILITY_SCENARIOS.map((sc, i) => (
+            <div key={i} className="rounded-full flex-1" style={{ height: 5, background: i < idx ? col(history[i]) : i === idx ? "#cbd5e1" : "#eef2ff" }} />
+          ))}
+        </div>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", color: "#9ca3af", whiteSpace: "nowrap" }}>SOLICITUD {idx + 1} DE {total}</span>
+      </div>
+
+      {/* prompt card */}
+      <div className="rounded-xl p-4 mb-5" style={{ background: "#f8fafc", border: "1px solid rgba(15,23,42,0.08)" }}>
+        <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.95rem", color: "#1e293b", lineHeight: 1.5, margin: 0 }}>{s.prompt}</p>
+        {s.note && <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.74rem", color: "#9ca3af", fontStyle: "italic", margin: "6px 0 0" }}>{s.note}</p>}
+      </div>
+
+      <p style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.98rem", color: "#111827", margin: "0 0 10px" }}>¿Cuadro de búsqueda o compañero de reflexión?</p>
+
+      <div className="grid sm:grid-cols-2 gap-3 mb-4">
+        <button onClick={() => pick("search")} disabled={!!picked}
+          className="rounded-xl p-4 text-left"
+          style={{ background: picked ? (s.correct === "search" ? "#3b5bdb" : "#f8fafc") : "#f8fafc", border: picked && s.correct === "search" ? "1px solid #3b5bdb" : "1px solid rgba(15,23,42,0.08)", cursor: picked ? "default" : "pointer", transition: "all .2s" }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", letterSpacing: "0.06em", color: picked && s.correct === "search" ? "rgba(255,255,255,0.75)" : "#9ca3af", marginBottom: 4 }}>CUADRO DE BÚSQUEDA</div>
+          <div style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.86rem", fontWeight: 600, color: picked && s.correct === "search" ? "#fff" : "#374151", lineHeight: 1.4 }}>Un cuadro de búsqueda podría encargarse de esto.</div>
+        </button>
+        <button onClick={() => pick("thinking")} disabled={!!picked}
+          className="rounded-xl p-4 text-left"
+          style={{ background: picked ? (s.correct === "thinking" ? "#ea580c" : "#f8fafc") : "#f8fafc", border: picked && s.correct === "thinking" ? "1px solid #ea580c" : "1px solid rgba(15,23,42,0.08)", cursor: picked ? "default" : "pointer", transition: "all .2s" }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", letterSpacing: "0.06em", color: picked && s.correct === "thinking" ? "rgba(255,255,255,0.75)" : "#9ca3af", marginBottom: 4 }}>COMPAÑERO DE REFLEXIÓN</div>
+          <div style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.86rem", fontWeight: 600, color: picked && s.correct === "thinking" ? "#fff" : "#374151", lineHeight: 1.4 }}>Esto requiere que el asistente trabaje conmigo.</div>
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {picked && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
+            className="rounded-xl p-4" style={{ background: `${col(s.correct)}0a`, borderLeft: `3px solid ${col(s.correct)}` }}>
+            <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 mb-2.5" style={{ background: `${col(s.correct)}18`, color: col(s.correct) }}>
+              {picked === s.correct ? <Check size={11} /> : <X size={11} />}
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", letterSpacing: "0.05em", fontWeight: 700 }}>{s.badge}</span>
+            </div>
+            <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.82rem", color: "#374151", lineHeight: 1.65, margin: 0 }}>{s.text}</p>
+            {s.subLabel && (
+              <div className="rounded-lg p-3 mt-3" style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.08)" }}>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.56rem", letterSpacing: "0.05em", color: "#9ca3af", marginBottom: 4 }}>{s.subLabel}</div>
+                <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.8rem", color: "#1e293b", fontStyle: "italic", lineHeight: 1.5, margin: 0 }}>{s.subText}</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {picked && (
+        <div className="flex justify-end mt-4">
+          {idx < total - 1 ? (
+            <button onClick={next} className="flex items-center gap-1.5 rounded-lg px-4 py-2" style={{ background: "linear-gradient(135deg,#3b5bdb,#7c3aed)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.8rem" }}>
+              Siguiente solicitud <ChevronRight size={14} />
+            </button>
+          ) : (
+            <button onClick={restart} className="flex items-center gap-1.5 rounded-lg px-4 py-2" style={{ background: "#fff", color: "#3b5bdb", border: "1px solid rgba(59,91,219,0.3)", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.8rem" }}>
+              <RotateCcw size={14} /> Reiniciar juego
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PromptsSection() {
   const [openTech, setOpenTech] = useState("few");
   const eyebrow = { background: "#e0f2fe", color: "#0284c7", fontFamily: "'JetBrains Mono', monospace", border: "1px solid rgba(2,132,199,0.2)" };
@@ -1388,6 +1525,16 @@ function PromptsSection() {
             Cada token de salida cuesta dinero y tiempo. Estas frases, añadidas al final de tu prompt, recortan la verborrea sin perder la respuesta.
           </p>
           <TokenSaverLab />
+        </div>
+
+        {/* Juego de capacidades */}
+        <div className="mb-16">
+          <div className="flex items-center gap-2 mb-2"><Target size={16} style={{ color: "#ea580c" }} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", letterSpacing: "0.08em", color: "#ea580c" }}>CLASIFICAR SEIS SOLICITUDES</span></div>
+          <h3 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.5rem", color: "#111827", marginBottom: 6 }}>Comprender las capacidades de un asistente de IA</h3>
+          <p className="max-w-2xl mb-6" style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.92rem", color: "#6b7280", lineHeight: 1.65 }}>
+            Un asistente de IA puede ayudarte con una amplia gama de tareas que van mucho más allá de las simples preguntas y respuestas, llegando a ser una especie de compañero que automatiza y complementa tu trabajo. Adivina, solicitud por solicitud, cuáles necesitan un cuadro de búsqueda y cuáles necesitan que el asistente piense contigo.
+          </p>
+          <CapabilitiesGame />
         </div>
 
         {/* Cierre */}
