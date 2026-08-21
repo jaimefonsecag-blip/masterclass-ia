@@ -731,6 +731,16 @@ const AI_TYPES_PURPOSE = [
     color: "#0891b2",
     bg: "#cffafe",
   },
+  {
+    icon: <Bot size={22} />,
+    title: "IA Agéntica",
+    subtitle: "Agentic AI",
+    description:
+      "No solo genera texto: persigue un objetivo de forma autónoma, decide qué herramientas usar, ejecuta acciones reales y ajusta su plan según el resultado. El salto de responder a actuar.",
+    examples: ["Agentes de codificación", "Automatización de procesos", "Asistentes que usan herramientas (MCP)"],
+    color: "#4338ca",
+    bg: "#e0e7ff",
+  },
 ];
 
 interface CardProps {
@@ -949,6 +959,81 @@ function AISection() {
             <TypeCard key={item.title} item={item} index={i} />
           ))}
         </div>
+
+        {/* ── Cómo interactuar con un asistente de IA ── */}
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mt-20 mb-10">
+          <span className="inline-block text-sm mb-4 px-3 py-1 rounded-full" style={{ background: "#e0f2fe", color: "#0284c7", fontFamily: "'JetBrains Mono', monospace", border: "1px solid rgba(2,132,199,0.2)" }}>
+            De la teoría a la práctica
+          </span>
+          <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: "clamp(1.5rem, 3vw, 2.25rem)", color: "#111827", letterSpacing: "-0.02em" }}>
+            ¿Cómo se trabaja realmente con un asistente de IA?
+          </h2>
+          <p className="mt-3 max-w-2xl" style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.95rem", lineHeight: 1.7, color: "#6b7280" }}>
+            Más allá de la teoría, el trabajo con un asistente de IA suele caer en tres modos distintos. Saber en cuál estás es la clave para usarlo bien.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+          {[
+            {
+              icon: <MessageSquare size={20} />, color: "#0ea5e9", bg: "#e0f2fe",
+              title: "Turno a turno", subtitle: "Compañero de reflexión",
+              desc: "Preguntas, la IA responde, tú guías, se revisa. El pensamiento surge en el intercambio mismo — paso a paso.",
+              when: "Cuando la respuesta cambia tu siguiente pregunta, quieres mantenerte en el proceso, o la tarea es rápida (una reescritura, un \"¿qué significa esto?\").",
+            },
+            {
+              icon: <ListChecks size={20} />, color: "#7c3aed", bg: "#f3e8ff",
+              title: "Delegar la tarea", subtitle: "La IA como colaborador autónomo",
+              desc: "Describes el resultado deseado — un informe, un entregable, una tarea recurrente — y la IA planifica, ejecuta y entrega. Tú revisas el plan y el resultado, no coordinas cada paso.",
+              when: "Cuando la tarea tiene varios pasos en secuencia, el resultado es un producto final real, o debe ejecutarse según un cronograma.",
+            },
+            {
+              icon: <Code2 size={20} />, color: "#059669", bg: "#d1fae5",
+              title: "Desarrollo de software", subtitle: "La IA trabaja en el código",
+              desc: "La IA lee, escribe y prueba código directamente, y ejecuta comandos. Un entorno de desarrollo agéntico, distinto al chat conversacional.",
+              when: "Vale la pena conocerlo aunque no programes — es una de las aplicaciones más maduras de la IA agéntica hoy.",
+            },
+          ].map((m, i) => (
+            <motion.div key={m.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+              className="p-5 rounded-2xl flex flex-col gap-3" style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+              <div className="rounded-xl flex items-center justify-center flex-shrink-0" style={{ width: 40, height: 40, background: m.bg, color: m.color }}>{m.icon}</div>
+              <div>
+                <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.92rem", color: "#111827" }}>{m.title}</div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", color: m.color, marginTop: 1 }}>{m.subtitle}</div>
+              </div>
+              <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.8rem", color: "#4b5563", lineHeight: 1.6, margin: 0 }}>{m.desc}</p>
+              <div className="rounded-lg p-2.5 mt-1" style={{ background: `${m.color}0a` }}>
+                <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.72rem", color: "#6b7280", lineHeight: 1.55, margin: 0 }}><strong style={{ color: m.color }}>Úsalo cuando: </strong>{m.when}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* ── Memoria y contexto: proyectos ── */}
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className="rounded-2xl p-6" style={{ background: "linear-gradient(135deg,#f5f7ff,#f3e8ff)", border: "1px solid rgba(124,58,237,0.14)" }}>
+          <div className="flex items-center gap-2 mb-3"><FolderOpen size={16} style={{ color: "#7c3aed" }} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", letterSpacing: "0.08em", color: "#7c3aed" }}>MEMORIA Y CONTEXTO</span></div>
+          <h3 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "#111827", marginBottom: 8 }}>¿Qué son los "proyectos"?</h3>
+          <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.86rem", color: "#4b5563", lineHeight: 1.65, marginBottom: 14 }}>
+            La mayoría de los asistentes de IA ofrecen espacios de trabajo persistentes — <strong>proyectos</strong> — con su propia memoria, historial e instrucciones, en lugar de empezar de cero en cada conversación.
+          </p>
+          <div className="grid md:grid-cols-2 gap-3 mb-4">
+            {[
+              { t: "Base de conocimiento", d: "Subes documentos de referencia una sola vez; la IA los consulta en cada conversación del proyecto, sin volver a subirlos." },
+              { t: "Instrucciones persistentes", d: "Defines tono, nivel técnico y estilo de respuesta una vez, y se aplican a toda conversación dentro del proyecto." },
+              { t: "Escala automáticamente", d: "Cuando la base de conocimiento crece, el sistema busca solo lo relevante en vez de intentar leerlo todo de una vez." },
+              { t: "Contexto compartido en equipo", d: "Varias personas trabajan desde la misma base de conocimiento e instrucciones — todos parten del mismo contexto." },
+            ].map((c, i) => (
+              <div key={i} className="rounded-xl p-3.5" style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(124,58,237,0.1)" }}>
+                <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.82rem", color: "#374151", marginBottom: 3 }}>{c.t}</div>
+                <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.78rem", color: "#6b7280", lineHeight: 1.55, margin: 0 }}>{c.d}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.78rem", color: "#6b7280", lineHeight: 1.6, margin: 0 }}>
+            <strong style={{ color: "#374151" }}>Cuándo crear uno:</strong> trabajas con materiales de referencia recurrentes (notas, informes, datos históricos), necesitas consistencia en cómo responde la IA, o varias personas del equipo deben partir del mismo contexto compartido.
+          </p>
+        </motion.div>
       </div>
     </section>
   );
@@ -1460,8 +1545,65 @@ function CapabilitiesGame() {
   );
 }
 
+function Fluency4DModal({ open, onClose }) {
+  const dims = [
+    { letter: "D", name: "Delegación", color: "#0ea5e9", desc: "Decidir qué tareas deben realizar los humanos, cuáles la IA, y cómo distribuir el trabajo entre ambos. Incluye comprender los objetivos, las capacidades de la IA y tomar decisiones estratégicas sobre la colaboración." },
+    { letter: "D", name: "Descripción", color: "#6366f1", desc: "Comunicación eficaz con sistemas de IA. Incluye definir claramente los resultados, guiar los procesos de IA y especificar los comportamientos e interacciones deseados.", link: "Es justo lo que trabajaste en Anatomía de un prompt y en las Técnicas de esta sección: rol, contexto, tarea, formato, ejemplos y restricciones son las herramientas de la Descripción." },
+    { letter: "D", name: "Discernimiento", color: "#7c3aed", desc: "Evaluar de forma reflexiva y crítica los resultados, procesos, comportamientos e interacciones de la IA. Incluye evaluar calidad, precisión, idoneidad y detectar áreas de mejora.", link: "El juego «¿Cuadro de búsqueda o compañero de reflexión?» es Discernimiento en acción: decidir cuándo una tarea realmente necesita colaboración con la IA." },
+    { letter: "D", name: "Diligencia", color: "#0891b2", desc: "Utilizar la IA de forma responsable y ética. Incluye tomar decisiones meditadas sobre los sistemas e interacciones, mantener la transparencia y asumir la responsabilidad del trabajo asistido por IA.", link: "Se conecta con los trucos de ahorro de tokens: usar la IA con criterio, sin sobrecargarla ni depender de ella para lo que no lo necesita." },
+  ];
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(13,14,26,0.5)", backdropFilter: "blur(6px)" }}>
+          <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 14, scale: 0.98 }}
+            transition={{ duration: 0.25 }} onClick={(e) => e.stopPropagation()}
+            className="w-full rounded-2xl overflow-hidden flex flex-col" style={{ maxWidth: 700, maxHeight: "88dvh", background: "#fff", boxShadow: "0 30px 80px rgba(13,14,26,0.35)" }}>
+            <div className="flex items-start justify-between gap-4 px-6 py-5 flex-shrink-0" style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)" }}>
+              <div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.62rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.8)", marginBottom: 5 }}>Marco 4D · Fluidez en IA</div>
+                <h2 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "1.3rem", color: "#fff", margin: 0 }}>¿Qué es la fluidez en IA?</h2>
+              </div>
+              <button onClick={onClose} className="flex items-center justify-center rounded-lg flex-shrink-0" style={{ width: 34, height: 34, background: "rgba(255,255,255,0.18)", color: "#fff", border: "none", cursor: "pointer" }} aria-label="Cerrar"><X size={18} /></button>
+            </div>
+            <div className="overflow-y-auto px-6 py-6">
+              <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.88rem", color: "#374151", lineHeight: 1.7, margin: "0 0 10px" }}>
+                La fluidez en IA es la capacidad de colaborar eficazmente con las herramientas de inteligencia artificial: no solo saber qué botones pulsar, sino desarrollar el criterio necesario para utilizar la IA correctamente en diferentes situaciones.
+              </p>
+              <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.82rem", color: "#6b7280", lineHeight: 1.65, margin: "0 0 20px" }}>
+                El <strong style={{ color: "#374151" }}>marco 4D</strong>, desarrollado por el profesor Rick Dakan (Ringling College of Art and Design) y el profesor Joseph Feller (University College Cork), identifica cuatro competencias básicas que, combinadas, ayudan a sacar el máximo provecho de la colaboración con la IA.
+              </p>
+              <div className="grid gap-3 mb-5">
+                {dims.map((d, i) => (
+                  <div key={i} className="rounded-xl p-4" style={{ background: `${d.color}0a`, border: `1px solid ${d.color}28` }}>
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                      <span className="rounded-lg flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26, background: d.color, color: "#fff", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "0.8rem" }}>{d.letter}</span>
+                      <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.92rem", color: "#111827" }}>{d.name}</span>
+                    </div>
+                    <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.8rem", color: "#4b5563", lineHeight: 1.6, margin: d.link ? "0 0 8px" : 0 }}>{d.desc}</p>
+                    {d.link && (
+                      <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.75rem", color: d.color, lineHeight: 1.55, margin: 0, fontStyle: "italic" }}>↳ {d.link}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-xl p-4" style={{ background: "#f5f7ff", borderLeft: "3px solid #3b5bdb" }}>
+                <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.8rem", color: "#374151", lineHeight: 1.6, margin: 0 }}>
+                  Ya has estado practicando estas habilidades en este módulo: la <strong>anatomía del prompt</strong> y las <strong>técnicas</strong> desarrollan la Descripción; el juego de clasificación desarrolla el Discernimiento; y el laboratorio de tokens desarrolla la Diligencia.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function PromptsSection() {
   const [openTech, setOpenTech] = useState("few");
+  const [showFluency, setShowFluency] = useState(false);
   const eyebrow = { background: "#e0f2fe", color: "#0284c7", fontFamily: "'JetBrains Mono', monospace", border: "1px solid rgba(2,132,199,0.2)" };
 
   return (
@@ -1491,6 +1633,20 @@ function PromptsSection() {
               <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.76rem", color: "#6b7280", lineHeight: 1.55, margin: 0 }}>{c.d}</p>
             </div>
           ))}
+        </motion.div>
+
+        {/* Fluidez en IA · marco 4D */}
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-16">
+          <button onClick={() => setShowFluency(true)}
+            className="w-full flex items-center gap-4 rounded-2xl p-4 text-left"
+            style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)", border: "none", cursor: "pointer" }}>
+            <div className="rounded-xl flex items-center justify-center flex-shrink-0" style={{ width: 44, height: 44, background: "rgba(255,255,255,0.18)" }}><Sparkles size={20} color="#fff" /></div>
+            <div className="flex-1">
+              <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>¿Qué es la fluidez en IA? — el marco 4D</div>
+              <div style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.78rem", color: "rgba(255,255,255,0.85)", marginTop: 2 }}>Delegación, Descripción, Discernimiento y Diligencia — cómo se conectan con lo que acabas de practicar</div>
+            </div>
+            <ChevronRight size={18} color="#fff" style={{ flexShrink: 0 }} />
+          </button>
         </motion.div>
 
         {/* Anatomía / constructor */}
@@ -1545,6 +1701,7 @@ function PromptsSection() {
           </p>
         </div>
       </div>
+      <Fluency4DModal open={showFluency} onClose={() => setShowFluency(false)} />
     </section>
   );
 }
@@ -3850,6 +4007,115 @@ function TokenizerSection() {
 }
 
 
+// ─── Kiro agent explainer ──────────────────────────────────────────────────────
+const KIRO_TREE = [
+  { path: ".kiro/", type: "dir", depth: 0, note: "Carpeta raíz de configuración del agente — vive junto al código, versionada en git." },
+  { path: "steering/", type: "dir", depth: 1, note: "Reglas persistentes que el agente lee SIEMPRE, en cada sesión, sin que se lo pidas." },
+  { path: "product.md", type: "file", depth: 2, note: "Qué es el producto, para quién, y qué NO debe hacer. Contexto funcional/negocio." },
+  { path: "tech.md", type: "file", depth: 2, note: "Stack técnico: lenguajes, frameworks, convenciones de código, comandos de build." },
+  { path: "structure.md", type: "file", depth: 2, note: "Cómo está organizado el repo: carpetas, capas, dónde va cada tipo de archivo." },
+  { path: "specs/", type: "dir", depth: 1, note: "Una subcarpeta por feature — el corazón del flujo Spec-Driven de Kiro." },
+  { path: "nombre-feature/", type: "dir", depth: 2, note: "Ej: 'checkout-con-cupones'. Se crea una por cada funcionalidad a construir." },
+  { path: "requirements.md", type: "file", depth: 3, note: "QUÉ debe hacer, en formato EARS (WHEN/THE SYSTEM SHALL). Lo aprueba un humano." },
+  { path: "design.md", type: "file", depth: 3, note: "CÓMO se construye: arquitectura, componentes, decisiones técnicas justificadas." },
+  { path: "tasks.md", type: "file", depth: 3, note: "Lista de tareas ejecutables en orden, cada una con su criterio de verificación." },
+  { path: "hooks/", type: "dir", depth: 1, note: "Automatizaciones que se disparan solas ante un evento del editor (guardar, crear archivo)." },
+  { path: "on-save-test.kiro.hook", type: "file", depth: 2, note: "Ej: al guardar un archivo de código, corre sus tests automáticamente." },
+  { path: "mcp.json", type: "file", depth: 1, note: "Qué servidores MCP tiene disponibles el agente: bases de datos, APIs, Jira, GitHub…" },
+];
+
+const KIRO_TABS = [
+  {
+    id: "func", label: "Del lado funcional", icon: <User size={14} />,
+    body: [
+      { h: "1. Describes la intención, no la solución", p: "Le cuentas a Kiro qué necesitas en lenguaje natural: \"Los usuarios deben poder aplicar un cupón de descuento en el checkout\". No especificas código ni arquitectura — esa es la parte técnica." },
+      { h: "2. Kiro convierte eso en un spec revisable", p: "Genera requirements.md con criterios de aceptación verificables (formato EARS). Tú lo lees como si fuera un documento de producto: ¿esto captura lo que quiero? Puedes editarlo en lenguaje natural." },
+      { h: "3. Apruebas antes de que exista código", p: "Nada se construye hasta que das el visto bueno al spec. Si falta un caso de negocio (ej. \"¿qué pasa si el cupón expiró?\"), lo agregas ahí — corregirlo en el documento toma segundos." },
+      { h: "4. Ves el progreso como una checklist", p: "tasks.md se lee como una lista de pendientes con casilleros. No necesitas leer código para saber qué está hecho y qué falta." },
+    ],
+  },
+  {
+    id: "tech", label: "Del lado técnico", icon: <Code2 size={14} />,
+    body: [
+      { h: "1. steering/ da contexto permanente", p: "Antes de tocar cualquier feature, Kiro ya sabe el stack (tech.md), la estructura de carpetas (structure.md) y las reglas de negocio (product.md) — no hay que repetírselo en cada prompt." },
+      { h: "2. specs/<feature>/ aísla cada trabajo", p: "Cada feature vive en su propia carpeta con sus 3 documentos. Esto permite trabajar varias features en paralelo sin que el contexto de una contamine a otra." },
+      { h: "3. design.md fuerza decisiones explícitas", p: "Antes de generar código, Kiro documenta arquitectura, componentes y trade-offs. Un ingeniero puede revisar el diseño sin ejecutar nada — como un PR de diseño antes del PR de código." },
+      { h: "4. tasks.md se ejecuta con verificación real", p: "Cada tarea corre, se valida contra su criterio (tests, build, lint) y solo entonces se marca completa. Si falla, Kiro no avanza a la siguiente — evita construir sobre una base rota." },
+      { h: "5. hooks/ y mcp.json conectan con el entorno real", p: "Los hooks automatizan reacciones a eventos (guardar → testear). mcp.json declara qué sistemas externos puede consultar el agente — sin esto, Kiro razona en el vacío." },
+    ],
+  },
+];
+
+function KiroTreeRow({ row }) {
+  const isDir = row.type === "dir";
+  return (
+    <div className="flex items-start gap-2 py-1" style={{ paddingLeft: row.depth * 16 }}>
+      <span style={{ color: isDir ? "#7c3aed" : "#3b5bdb", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", flexShrink: 0, marginTop: 1 }}>
+        {isDir ? "📁" : "📄"}
+      </span>
+      <div>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.74rem", color: isDir ? "#7c3aed" : "#1e293b", fontWeight: isDir ? 600 : 400 }}>{row.path}</span>
+        <div style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.68rem", color: "#9ca3af", lineHeight: 1.4, marginTop: 1 }}>{row.note}</div>
+      </div>
+    </div>
+  );
+}
+
+function KiroExplainer() {
+  const [tab, setTab] = useState("func");
+  const active = KIRO_TABS.find((t) => t.id === tab);
+  return (
+    <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mt-4">
+      <div className="flex items-center gap-2 mb-2"><FolderOpen size={16} style={{ color: "#7c3aed" }} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", letterSpacing: "0.08em", color: "#7c3aed" }}>AGENTE EN LA PRÁCTICA · KIRO</span></div>
+      <h3 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "#111827", marginBottom: 6 }}>Cómo trabaja un agente real: Kiro</h3>
+      <p className="max-w-2xl mb-6" style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.92rem", color: "#6b7280", lineHeight: 1.65 }}>
+        Kiro es un IDE con agente que aplica Spec-Driven Development por diseño. Todo lo que hace queda organizado en una carpeta <code style={{ background: "#f3f4f6", padding: "1px 5px", borderRadius: 4, fontFamily: "'JetBrains Mono',monospace" }}>.kiro/</code> dentro del propio proyecto — así el contexto, las reglas y los specs viven junto al código, no en la cabeza del agente.
+      </p>
+
+      <div className="grid lg:grid-cols-2 gap-5">
+        {/* Folder tree */}
+        <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(124,58,237,0.14)", boxShadow: "0 2px 10px rgba(0,0,0,0.04)" }}>
+          <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "#faf5ff", borderBottom: "1px solid rgba(124,58,237,0.1)" }}>
+            <FolderOpen size={13} style={{ color: "#7c3aed" }} />
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.68rem", color: "#7c3aed" }}>estructura de carpetas del proyecto</span>
+          </div>
+          <div className="px-4 py-3">
+            {KIRO_TREE.map((row, i) => <KiroTreeRow key={i} row={row} />)}
+          </div>
+        </div>
+
+        {/* Técnico / funcional tabs */}
+        <div className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#fff", border: "1px solid rgba(59,91,219,0.14)", boxShadow: "0 2px 10px rgba(0,0,0,0.04)" }}>
+          <div className="flex items-center gap-1 px-3 py-2" style={{ background: "#f5f7ff", borderBottom: "1px solid rgba(59,91,219,0.1)" }}>
+            {KIRO_TABS.map((t) => (
+              <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5" style={{ background: tab === t.id ? "#fff" : "transparent", border: tab === t.id ? "1px solid rgba(59,91,219,0.2)" : "1px solid transparent", boxShadow: tab === t.id ? "0 1px 4px rgba(0,0,0,0.06)" : "none", color: tab === t.id ? "#3b5bdb" : "#9ca3af", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 600, fontSize: "0.76rem" }}>
+                {t.icon} {t.label}
+              </button>
+            ))}
+          </div>
+          <AnimatePresence mode="wait">
+            <motion.div key={tab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="px-4 py-4 flex flex-col gap-3.5" style={{ flex: 1 }}>
+              {active.body.map((b, i) => (
+                <div key={i}>
+                  <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: "0.8rem", color: "#111827", marginBottom: 3 }}>{b.h}</div>
+                  <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.78rem", color: "#6b7280", lineHeight: 1.6, margin: 0 }}>{b.p}</p>
+                </div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <div className="rounded-xl p-4 mt-5 flex items-start gap-3" style={{ background: "linear-gradient(135deg,#f5f7ff,#f3e8ff)", borderLeft: "3px solid #7c3aed" }}>
+        <Lightbulb size={16} style={{ color: "#7c3aed", flexShrink: 0, marginTop: 2 }} />
+        <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "0.78rem", color: "#4b5563", lineHeight: 1.6, margin: 0 }}>
+          La idea central: <strong style={{ color: "#374151" }}>el agente no improvisa contexto en cada sesión</strong>. La carpeta <code style={{ background: "rgba(124,58,237,0.1)", padding: "1px 5px", borderRadius: 4, fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem" }}>.kiro/</code> es la memoria persistente y compartida del equipo: negocio y desarrollo leen la misma fuente de verdad.
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 // ===== AgentsSection =====
 
 // ─── Chatbot vs Agent modal ────────────────────────────────────────────────────
@@ -4426,6 +4692,8 @@ function AgentsSection() {
             </div>
           </motion.div>
         </div>
+
+        <KiroExplainer />
       </div>
     </section>
   );
